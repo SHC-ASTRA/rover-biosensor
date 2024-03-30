@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>core_pkg</name>
+  <name>citadel_pkg</name>
   <version>1.0.0</version>
   <description>Citadel ROS node package to handle command interpretation and embedded interfacing for the biosensor's Citadel.</description>
   <maintainer email="tristanmcginnis26@gmail.com">tristan</maintainer>
