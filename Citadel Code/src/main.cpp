@@ -4,16 +4,20 @@
 #include <string>
 #include <cmath>
 #include <cstdlib>
-//#include <utility/imumaths.h>
+#include <LSS.h>
+
+#define LSS_BAUD	(LSS_DefaultBaud)
+// Choose the proper serial port for your platform
+#define LSS_SERIAL	(Serial1)	// ex: Many Arduino boards
+//#define LSS_SERIAL	(Serial1)	// ex: Teensy
 
 using namespace std;
 
 
 #define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
 
-
-#define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
-
+LSS myLSS_Output = LSS(7);
+LSS myLSS_Input = LSS(8);
 
 //Prototypes
 void activateCapSer(int num, int truFal);
@@ -29,7 +33,10 @@ void setup() {
   //-----------------//
   // Initialize Pins //
   //-----------------//
-  
+
+    pinMode(0, OUTPUT);  // Pi Tx   (UART) // UART
+    pinMode(1, INPUT);   // Pi Rx   (UART) // UART
+
     pinMode(LED_PIN, OUTPUT);
     Serial.begin(115200);
     digitalWrite(LED_PIN, HIGH);
@@ -37,10 +44,45 @@ void setup() {
     delay(2000);
     digitalWrite(LED_PIN, LOW);
 
+    // Fans
+    pinMode(31, OUTPUT);
+    pinMode(32, OUTPUT);
+    pinMode(33, OUTPUT);
 
-  //--------------------//
-  // Initialize Camera //
-  //--------------------//
+    // Pumps
+    pinMode(38, OUTPUT);
+    pinMode(39, OUTPUT);
+    pinMode(40, OUTPUT);
+    pinMode(41, OUTPUT);
+
+    digitalWrite(33, LOW); // Fan 1 
+    digitalWrite(31, LOW); // Fan 2 
+    digitalWrite(32, LOW); // Fan 3 
+    digitalWrite(38, LOW); // Pump 1 
+    digitalWrite(39, LOW); // Pump 2 
+    digitalWrite(40, LOW); // Pump 3 
+    digitalWrite(41, LOW); // Pump 4 
+
+  //-----------------------//
+  // Initialize Lynx Servo //
+  //-----------------------//
+
+  LSS::initBus(LSS_SERIAL, LSS_BAUD);
+
+	// Initialize LSS output to position 0.0
+	myLSS_Output.move(0);
+
+	// Wait for it to get there
+	delay(2000);
+
+	// Lower output servo stiffness & accelerations
+	myLSS_Output.setAngularStiffness(0);
+	myLSS_Output.setAngularHoldingStiffness(0);
+	myLSS_Output.setAngularAcceleration(15);
+	myLSS_Output.setAngularDeceleration(15);
+
+	// Make input servo limp (no active resistance)
+	myLSS_Input.limp();
 
 }
 
@@ -150,30 +192,13 @@ void loop() {
 
           
         }
-    }else if(token == "capServo") {                          // Is looking for a command that looks like "ctrl,LeftY-Axis,RightY-Axis" where LY,RY are >-1 and <1
-        if(command != prevCommand)
-        {
-          scommand.erase(0, pos + delimiter.length());
-
-          prevCommand = command;
-
-          for(int i = 0; i < 2; i+= 1){
-            token = scommand.substr(0, pos);
-            pos = scommand.find(delimiter);
-            
-            activateCapSer(i,stoi(token));
-        
-            scommand.erase(0, pos + delimiter.length());
-          }
-
-          
-        }
     }else if (token == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
       scommand.erase(0, pos + delimiter.length());
       token = scommand.substr(0, pos);
       pos = scommand.find(delimiter);
 
       //activate servo with speed being the token
+      myLSS_Output.move(stoi(token));
 
     } else if (token == "ping") {
       Serial.println("pong");
@@ -200,40 +225,28 @@ void loop() {
 
 void activateFan(int num, int truFal){
     if(num == 0){
-
+      digitalWrite(31, truFal);
     }
     if(num == 1){
-        
+      digitalWrite(32, truFal); 
     }
     if(num == 2){
-        
-    }
-}
-
-void activateCapSer(int num, int truFal){
-    if(num == 0){
-
-    }
-    if(num == 1){
-        
-    }
-    if(num == 2){
-        
+      digitalWrite(33, truFal);  
     }
 }
 
 void activatePump(int num, int truFal){
     if(num == 0){
-
+      digitalWrite(38, truFal); 
     }
     if(num == 1){
-        
+      digitalWrite(39, truFal); 
     }
     if(num == 2){
-        
+      digitalWrite(40, truFal); 
     }
     if(num == 3){
-        
+      digitalWrite(41, truFal); 
     }
 }
 
