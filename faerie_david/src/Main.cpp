@@ -394,21 +394,21 @@ void loop() {
 //-------------------------------------------------------//
 
 
-std::vector<String> parseInput(String input, const char delim) {
-    //Parse into array separated by spaces
+// Parse Arduino String into String vector separated by delim
+// Equivalent to Python's .split()
+std::vector<String> parseInput(String input, const char delim = ',') {
     //Modified from https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813
+    
     std::vector<String> args = {};
-    //String args[20];
-    //int argCount = 0;
-    String ourInput = input;
-    while (ourInput.length() > 0) {
-        int index = ourInput.indexOf(delim);
-        if (index == -1) { // No space found
-            args.push_back(ourInput);
+
+    while (input.length() > 0) {
+        int index = input.indexOf(delim);
+        if (index == -1) { // No instance of delim found in input
+            args.push_back(input);
             break;
         } else {
-            args.push_back(ourInput.substring(0, index));
-            ourInput = ourInput.substring(index+1);
+            args.push_back(input.substring(0, index));
+            input = input.substring(index+1);
         }
     }
 
