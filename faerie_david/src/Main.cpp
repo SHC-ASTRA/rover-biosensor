@@ -13,6 +13,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <vector>
+#include <Servo.h>
 // Our own resources
 #include "AstraMotors.h"
 #include "AstraCAN.h"
@@ -28,10 +29,27 @@ using namespace std;
 
 #define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
 #define LASER_PIN 15
+#define SERVO_PWM_PIN 1
+#define COMMS_UART Serial4
+#define COMMS_UART_NUM 4
+
+//-----------//
+// Constants //
+//-----------//
+
+const long SERIAL_BAUD     = 115200;
+const long COMMS_UART_BAUD = 9600;
+
+const int SERVO_MIN =  500;
+const int SERVO_MAX = 2500;
 
 //------------------------//
 // Classes for components //
 //------------------------//
+
+// Basic 5V PWM servo for SCABBARD
+Servo servo;
+
 
 // SHT 31 in SCABBARD
 Adafruit_SHT31 sht31 = Adafruit_SHT31(); // Faerie HUM/TEMP Sensor
@@ -67,8 +85,8 @@ void setup() {
     // Initialize Pins //
     //-----------------//
   
-    Serial.begin(115200); // or 115200
-    Serial4.begin(9600); // for comms with Arm Socket Teensy/RasPi
+    Serial.begin(SERIAL_BAUD);
+    COMMS_UART.begin(COMMS_UART_BAUD); // for comms with Arm Socket Teensy/RasPi
 
     // Teensy built-in LED
     pinMode(LED_PIN, OUTPUT);
@@ -77,6 +95,9 @@ void setup() {
     // Faerie drill lasers
     pinMode(LASER_PIN, OUTPUT);
     digitalWrite(LASER_PIN, LOW);
+
+    // SCABBARD Servo
+    servo.attach(SERVO_PWM_PIN, SERVO_MIN, SERVO_MAX);
 
     // LED stays on for 2 seconds to show powered on
     delay(2000);
@@ -176,24 +197,23 @@ void loop() {
     if(Serial.available()) {
         inputAvailable = true;
         inputMethod = 0;
-    } else if(Serial4.available()) {
+    } else if(COMMS_UART.available()) {
         inputAvailable = true;
-        inputMethod = 4;
+        inputMethod = COMMS_UART_NUM;
     }
 
     if (inputAvailable) {
 
-        // Output to be sent to either Serial or Serial4 depending on which was used
+        // Output to be sent to either Serial or COMMS_UART depending on which was used
         String output = "";
-
 
         String input;
         if(inputMethod == 0)  // Input comes via USB
             input = Serial.readStringUntil('\n'); //Take str input from Serial
         
-        else if(inputMethod == 4)  // Input comes via UART from Arm
-            input = Serial4.readStringUntil('\n'); //Take str input from UART
-        
+        else if(inputMethod == COMMS_UART_NUM)  // Input comes via UART from Arm
+            input = COMMS_UART.readStringUntil('\n'); //Take str input from UART
+
         
         input.trim();
         std::vector<String> args = parseInput(input, ',');
@@ -254,6 +274,10 @@ void loop() {
             /**/ if(subcommand == "duty") {
                 // CW/+ = CLOSE, CCW/- = OPEN
                 Motor1.setDuty(args[2].toFloat());
+            }
+
+            else if(subcommand == "servo") {
+                servo.write(args[2].toInt());
             }
 
             else if(subcommand == "stop") {
@@ -370,8 +394,8 @@ void loop() {
         if(output.length() > 1) {
             if(inputMethod == 0)
                 Serial.print(output);
-            else if(inputMethod == 4)
-                Serial4.print(output);
+            else if(inputMethod == COMMS_UART_NUM)
+                COMMS_UART.print(output);
         }
 
     }
