@@ -5,19 +5,17 @@
 #include <cmath>
 #include <cstdlib>
 #include <LSS.h>
+#include <vector>
 
-#define LSS_BAUD	(LSS_DefaultBaud)
-// Choose the proper serial port for your platform
-#define LSS_SERIAL	(Serial1)	// ex: Many Arduino boards
-//#define LSS_SERIAL	(Serial1)	// ex: Teensy
+#define LSS_ID        (3)
+#define LSS_BAUD    (LSS_DefaultBaud)
+#define LSS_SERIAL    (Serial2)
+
+LSS myLSS = LSS(LSS_ID);
 
 using namespace std;
 
-
 #define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
-
-LSS myLSS_Output = LSS(7);
-LSS myLSS_Input = LSS(8);
 
 //Prototypes
 void activateCapSer(int num, int truFal);
@@ -70,19 +68,19 @@ void setup() {
   LSS::initBus(LSS_SERIAL, LSS_BAUD);
 
 	// Initialize LSS output to position 0.0
-	myLSS_Output.move(0);
+	myLSS.move(0);
 
 	// Wait for it to get there
 	delay(2000);
 
 	// Lower output servo stiffness & accelerations
-	myLSS_Output.setAngularStiffness(0);
-	myLSS_Output.setAngularHoldingStiffness(0);
-	myLSS_Output.setAngularAcceleration(15);
-	myLSS_Output.setAngularDeceleration(15);
+	myLSS.setAngularStiffness(0);
+	myLSS.setAngularHoldingStiffness(0);
+	myLSS.setAngularAcceleration(15);
+	myLSS.setAngularDeceleration(15);
 
 	// Make input servo limp (no active resistance)
-	myLSS_Input.limp();
+	//myLSS_Input.limp();
 
 }
 
@@ -146,69 +144,40 @@ void loop() {
 
   if (Serial.available()) {
     String command = Serial.readStringUntil('\n');  // Command is equal to a line in the serial
-    command.trim();                                 // I don't know why this is here, but it is important
-    string delimiter = ",";                         // The key that decides where the command should be split
-    size_t pos = 0;                                 // Standard parse variable
-    string token;                                   // The current piece of the string being used.
-    string token2;                                  // A secondary piece of the string saved.
-    string scommand = command.c_str();              // Converts the Arduino String into a C++ string since they are different things
-    pos = scommand.find(delimiter);
-    token = scommand.substr(0, pos);
+    command.trim();
     String prevCommand;
 
-    if (token == "fan") {                          // Is looking for a command that looks like "ctrl,LeftY-Axis,RightY-Axis" where LY,RY are >-1 and <1
+    vector<String> parCmd = {};
+    parCmd = parseInput(command, ',');
+
+    // Fan
+    if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0"
         if(command != prevCommand)
         {
-          scommand.erase(0, pos + delimiter.length());
-
           prevCommand = command;
-
-          for(int i = 0; i < 3; i+= 1){
-            token = scommand.substr(0, pos);
-            pos = scommand.find(delimiter);
-            
-            activateFan(i,stoi(token));
-        
-            scommand.erase(0, pos + delimiter.length());
-          }
-
-          
+          for(int i = 0; i < 2; i++){
+            activateFan(i,(parCmd[i+1]).toInt());
+          } 
         }
-    }else if(token == "pump") {                          // Is looking for a command that looks like "ctrl,LeftY-Axis,RightY-Axis" where LY,RY are >-1 and <1
+    // Pump
+    }else if(parCmd[0] == "pump") {                          // Is looking for a command that looks like "pump,0,0,0,0"
         if(command != prevCommand)
         {
-          scommand.erase(0, pos + delimiter.length());
-
           prevCommand = command;
-
-          for(int i = 0; i < 3; i+= 1){
-            token = scommand.substr(0, pos);
-            pos = scommand.find(delimiter);
-            
-            activatePump(i,stoi(token));
-        
-            scommand.erase(0, pos + delimiter.length());
-          }
-
-          
+          for(int i = 0; i < 3; i++){
+            activatePump(i,(parCmd[i+1]).toInt());
+          } 
         }
-    }else if (token == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
-      scommand.erase(0, pos + delimiter.length());
-      token = scommand.substr(0, pos);
-      pos = scommand.find(delimiter);
-
+    // Servo
+    }else if (parCmd[0] == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
       //activate servo with speed being the token
-      myLSS_Output.move(stoi(token));
-
-    } else if (token == "ping") {
+      myLSS.move((parCmd[1]).toInt());
+    } else if (parCmd[0] == "ping") {
       Serial.println("pong");
-    } else if (token == "time") {
+    } else if (parCmd[0] == "time") {
       Serial.println(millis());
     }
-
-
   }
-
 }
 
 //-------------------------------------------------------//
@@ -224,65 +193,29 @@ void loop() {
 //-------------------------------------------------------//
 
 void activateFan(int num, int truFal){
-    if(num == 0){
-      digitalWrite(31, truFal);
-    }
-    if(num == 1){
-      digitalWrite(32, truFal); 
-    }
-    if(num == 2){
-      digitalWrite(33, truFal);  
-    }
+  digitalWrite(31+num, truFal);
 }
 
 void activatePump(int num, int truFal){
-    if(num == 0){
-      digitalWrite(38, truFal); 
-    }
-    if(num == 1){
-      digitalWrite(39, truFal); 
-    }
-    if(num == 2){
-      digitalWrite(40, truFal); 
-    }
-    if(num == 3){
-      digitalWrite(41, truFal); 
-    }
+  digitalWrite(38+num, truFal);
 }
 
-// Reminder of how to ask motors
-// void turnCCW(){
-//   sendDutyCycle(Can0, 2, -0.6);
-//   sendDutyCycle(Can0, 4, -0.6);
-//   sendDutyCycle(Can0, 1, -0.6);
-//   sendDutyCycle(Can0, 3, -0.6);
-// }
+std::vector<String> parseInput(String input, const char delim) {
+    //Parse into array separated by delim
+    //Modified from https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813
+    std::vector<String> args = {};
+    //String args[20];
+    //int argCount = 0;
+    while (input.length() > 0) {
+        int index = input.indexOf(delim);
+        if (index == -1) { // No space found
+            args.push_back(input);
+            break;
+        } else {
+            args.push_back(input.substring(0, index));
+            input = input.substring(index+1);
+        }
+    }
 
-// Reminder of how to ask motors
-// void goForwards(float speed){
-//   motorList[0].setDuty(speed);
-//   motorList[1].setDuty(speed);
-//   motorList[2].setDuty(speed);
-//   motorList[3].setDuty(speed);
-// }
-
-// Magic that makes the SparkMax work with CAN
-// void loopHeartbeats(){
-//     Can0.begin();
-//     Can0.setBaudRate(1000000);
-//     Can0.setMaxMB(16);
-//     Can0.enableFIFO();
-//     Can0.enableFIFOInterrupt();
-
-//     while(1){
-//       sendHeartbeat(Can0, 1);
-//       threads.delay(3);
-//       sendHeartbeat(Can0, 2);
-//       threads.delay(3);
-//       sendHeartbeat(Can0, 3);
-//       threads.delay(3);
-//       sendHeartbeat(Can0, 4);
-//       threads.delay(3);
-//       threads.yield();
-//     }
-// }
+    return args;
+}
