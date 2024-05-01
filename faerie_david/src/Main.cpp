@@ -319,7 +319,7 @@ void loop() {
                 float temp = sht31.readTemperature();
                 if(!isnan(temp)) {
                     // Serial.println(sht31.readTemperature());
-                    output += sht31.readTemperature();
+                    output += temp;
                     output += '\n';
                 } else {
                     // Serial.println("Failed to read temperature.");
@@ -331,7 +331,7 @@ void loop() {
                 float hum = sht31.readHumidity();
                 if(!isnan(hum)) {
                     // Serial.println(sht31.readHumidity());
-                    output += sht31.readHumidity();
+                    output += hum;
                     output += '\n';
                 } else {
                     // Serial.println("Failed to read humidity.");
