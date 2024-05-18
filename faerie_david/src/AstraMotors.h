@@ -47,3 +47,4 @@ public:
     void UpdateForAcceleration();                       // Update the current speed to try and match the setMotorSpeed variable
 
 };
+
