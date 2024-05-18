@@ -471,3 +471,30 @@ void loopHeartbeats(){
     }
 
 }
+
+// Poll SHT and send temperature and humidity data to socket over UART
+// in format "faeriesht,`temperature`,`humidity`"
+void sendSHTData(void) {
+
+    COMMS_UART.print("faeriesht,");
+    
+    float temp = sht31.readTemperature();
+    float hum = sht31.readHumidity();
+
+    // Verify temperature reading
+    if(!isnan(temp))
+        COMMS_UART.print(temp);
+    else
+        COMMS_UART.print("FAIL");
+    
+    COMMS_UART.print(',');
+
+    // Verify humidity reading
+    if(!isnan(hum))
+        COMMS_UART.print(hum);
+    else
+        COMMS_UART.print("FAIL");
+    
+    COMMS_UART.print('\n');
+
+}
