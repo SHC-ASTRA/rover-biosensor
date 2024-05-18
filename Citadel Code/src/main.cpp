@@ -22,8 +22,13 @@ void activateCapSer(int num, int truFal);
 void activatePump(int num, int truFal);
 void activateFan(int num, int truFal);
 
+std::vector<String> parseInput(String input, const char delim);
 
-unsigned long clockTimer = millis();
+
+unsigned long fanTimer;
+unsigned long pumpTimer;
+bool fanON = 0; // 1 = long = 2seconds, 0 = short = 0.5s
+bool pumpON = 0;
 
 
 void setup() {
@@ -110,12 +115,20 @@ void loop() {
   // Useful for testing               //
   //----------------------------------//
 
-  if(0){
-    if((millis()-clockTimer)>50){
-      clockTimer = millis();
-
-    }
+  
+  if((pumpON)&&(pumpTimer < millis())){
+    for(int i = 0; i < 3; i++){
+      activatePump(i,0);
+    } 
+    pumpON = 0;
   }
+  if((fanON)&&(fanTimer < millis())){
+    for(int i = 0; i < 2; i++){
+      activateFan(i,0);
+    } 
+    fanON = 0;
+  }
+  
 
 
   //------------------//
@@ -151,22 +164,26 @@ void loop() {
     parCmd = parseInput(command, ',');
 
     // Fan
-    if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0"
+    if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0,time"
         if(command != prevCommand)
         {
           prevCommand = command;
           for(int i = 0; i < 2; i++){
             activateFan(i,(parCmd[i+1]).toInt());
-          } 
+          }
+          fanON = 1;
+          fanTimer = millis() + parCmd[4].toInt(); 
         }
     // Pump
-    }else if(parCmd[0] == "pump") {                          // Is looking for a command that looks like "pump,0,0,0,0"
+    }else if(parCmd[0] == "pump") {                          // Is looking for a command that looks like "pump,0,0,0,0,time"
         if(command != prevCommand)
         {
           prevCommand = command;
           for(int i = 0; i < 3; i++){
             activatePump(i,(parCmd[i+1]).toInt());
-          } 
+          }
+          pumpON = 1;
+          pumpTimer = millis() + parCmd[5].toInt();
         }
     // Servo
     }else if (parCmd[0] == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
