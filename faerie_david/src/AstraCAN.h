@@ -3,6 +3,7 @@
 //FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 
 
+
 //Convert float to little endian decimal representation
 inline void Float2LEDec(float x, uint8_t (& buffer_data)[8])
 {

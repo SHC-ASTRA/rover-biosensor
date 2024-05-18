@@ -7,16 +7,17 @@
 // Includes //
 //----------//
 
+// Standard Includes
 #include <Arduino.h>
 #include <iostream>
 #include <string>
-#include <cmath>
-#include <cstdlib>
 #include <vector>
-#include <Servo.h>
+#include <Servo.h> // For SCABBARD servo (unused)
+
 // Our own resources
 #include "AstraMotors.h"
 #include "AstraCAN.h"
+//#include "AstraSensors.h" // Unused, only sensor on FAERIE is 
 #include "Adafruit_SHT31.h"
 #include "TeensyThreads.h"
 
