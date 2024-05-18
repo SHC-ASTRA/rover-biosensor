@@ -282,8 +282,7 @@ void loop() {
         // ctrl //
         //------//
         else if(command == "ctrl") { // ctrl //
-            String subcommand = args[1];
-
+            String subcommand = args[1].toLowerCase();
             
 
             /**/ if(subcommand == "duty") {
@@ -303,7 +302,7 @@ void loop() {
                 identifyDevice(Can0, CAN_ID);
             }
 
-            else if(subcommand == "sht_heater") {
+            else if(subcommand == "shtheater") {
                 if(args[2] == "on") {
                     digitalWrite(LED_PIN, HIGH);
                 } 
@@ -327,9 +326,10 @@ void loop() {
         // data //
         //------//
         else if(command == "data") { // data //
-            String subcommand = args[1];
+            String subcommand = args[1].toLowerCase();
 
-            /**/ if(subcommand == "sendTemp") {
+
+            /**/ if(subcommand == "sendtemp") {
                 float temp = sht31.readTemperature();
                 if(!isnan(temp)) {
                     // Serial.println(sht31.readTemperature());
@@ -341,7 +341,7 @@ void loop() {
                 }
             }
             
-            else if(subcommand == "sendHum") {
+            else if(subcommand == "sendhum") {
                 float hum = sht31.readHumidity();
                 if(!isnan(hum)) {
                     // Serial.println(sht31.readHumidity());
@@ -353,7 +353,7 @@ void loop() {
                 }
             }
 
-            else if(subcommand == "sendHeater") {
+            else if(subcommand == "sendheater") {
                 if(sht31.isHeaterEnabled()) {
                     // Serial.println("true");
                     output += "true\n";
@@ -363,7 +363,7 @@ void loop() {
                 }
             }
 
-            else if(subcommand == "sendSHT") {
+            else if(subcommand == "sendsht") {
                 output += "faeriesht,";
 
                 float temp = sht31.readTemperature();
