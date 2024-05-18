@@ -68,12 +68,17 @@ AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);//Drill
 unsigned long lastAccel;
 
 
+// Last millis value that sht temp and hum data was sent to socket
+uint32_t lastDataSend = 0;
+
+
 //------------//
 // Prototypes //
 //------------//
 
 void loopHeartbeats();
 void parseInput(String input, std::vector<String>& args, const char delim);
+void sendSHTData(void);
 
 //-------------//
 // Begin Setup //
@@ -167,6 +172,15 @@ void loop() {
         } else {
             //pass for RPM control mode
         }
+    }
+
+
+
+    // Send SHT temp and hum data to socket once per second
+    if(millis()-lastDataSend >= 1000) {
+        lastDataSend = millis();
+
+        sendSHTData();
     }
 
     
@@ -350,41 +364,26 @@ void loop() {
             }
 
             else if(subcommand == "sendSHT") {
+                output += "faeriesht,";
+
                 float temp = sht31.readTemperature();
                 float hum = sht31.readHumidity();
-                // Temperature
-                if(!isnan(temp)) { // Temperature
-                    // Serial.print("Temp = ");
-                    // Serial.print(temp);
-                    // Serial.println(" *C");
-                    output += "Temp = ";
+
+                // Verify temperature reading
+                if(!isnan(temp))
                     output += temp;
-                    output += " *C\n";
-                } else {
-                    // Serial.println("Failed to read temperature.");
-                    output += "Failed to read temperature\n";
-                }
-                // Humidity
-                if(!isnan(hum)) {
-                    // Serial.print("Hum = ");
-                    // Serial.print(hum);
-                    // Serial.println(" %");
-                    output += "Hum = ";
-                    output += hum;
-                    output += " %\n";
-                } else {
-                    // Serial.println("Failed to read humidity.");
-                    output += "Failed to read humidity.\n";
-                }
-                // Heater state
-                // Serial.print("SHT Heater State: ");
-                output += "SHT Heater State: ";
-                if(sht31.isHeaterEnabled())
-                    // Serial.println("ENABLED");
-                    output += "ENABLED";
                 else
-                    // Serial.println("DISABLED");
-                    output += "DISABLED\n";
+                    output += "FAIL";
+                
+                output += ',';
+
+                // Verify humidity reading
+                if(!isnan(hum))
+                    output += hum;
+                else
+                    output += "FAIL";
+                
+                output += '\n';
             }
         }
 
@@ -473,7 +472,7 @@ void loopHeartbeats(){
 }
 
 // Poll SHT and send temperature and humidity data to socket over UART
-// in format "faeriesht,`temperature`,`humidity`"
+// in format "faeriesht,`{temperature}`,`{humidity}`"
 void sendSHTData(void) {
 
     COMMS_UART.print("faeriesht,");
