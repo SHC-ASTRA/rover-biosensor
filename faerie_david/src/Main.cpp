@@ -303,12 +303,10 @@ void loop() {
             }
 
             else if(subcommand == "shtheater") {
-                if(args[2] == "on") {
-                    digitalWrite(LED_PIN, HIGH);
-                } 
-                else {
-                    digitalWrite(LED_PIN, LOW);
-                }
+                if(args[2] == "on")
+                    sht31.heater(true);
+                else
+                    sht31.heater(false);
             }
 
             else if(subcommand == "laser") {
