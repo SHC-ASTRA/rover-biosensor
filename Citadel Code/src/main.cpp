@@ -193,7 +193,8 @@ void loop() {
     }else if (parCmd[0] == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
       //activate servo with speed being the token
       //myLSS.move((parCmd[1]).toInt());
-      myLSS.moveRelative((parCmd[1]).toInt());
+      myLSS.moveRelative(((parCmd[1]).toInt())*10);
+      Serial.println(myLSS.getPosition());
     } else if (parCmd[0] == "ping") {
       Serial.println("pong");
     } else if (parCmd[0] == "time") {
