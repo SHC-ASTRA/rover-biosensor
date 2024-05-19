@@ -12,7 +12,6 @@
 #define LSS_SERIAL    (Serial2)
 
 LSS myLSS = LSS(LSS_ID);
-
 using namespace std;
 
 #define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
@@ -22,8 +21,13 @@ void activateCapSer(int num, int truFal);
 void activatePump(int num, int truFal);
 void activateFan(int num, int truFal);
 
+std::vector<String> parseInput(String input, const char delim);
 
-unsigned long clockTimer = millis();
+
+unsigned long fanTimer;
+unsigned long pumpTimer;
+bool fanON = 0; // 1 = long = 2seconds, 0 = short = 0.5s
+bool pumpON = 0;
 
 
 void setup() {
@@ -56,8 +60,9 @@ void setup() {
     digitalWrite(33, LOW); // Fan 1 
     digitalWrite(31, LOW); // Fan 2 
     digitalWrite(32, LOW); // Fan 3 
-    digitalWrite(38, LOW); // Pump 1 
-    digitalWrite(39, LOW); // Pump 2 
+
+    digitalWrite(37, LOW); // Pump 1 
+    digitalWrite(38, LOW); // Pump 2 
     digitalWrite(40, LOW); // Pump 3 
     digitalWrite(41, LOW); // Pump 4 
 
@@ -68,7 +73,7 @@ void setup() {
   LSS::initBus(LSS_SERIAL, LSS_BAUD);
 
 	// Initialize LSS output to position 0.0
-	myLSS.move(0);
+	// myLSS.move(0);
 
 	// Wait for it to get there
 	delay(2000);
@@ -110,12 +115,22 @@ void loop() {
   // Useful for testing               //
   //----------------------------------//
 
-  if(0){
-    if((millis()-clockTimer)>50){
-      clockTimer = millis();
-
-    }
+  
+  if((pumpON)&&(pumpTimer < millis())){
+    for(int i = 0; i <= 2; i++){
+      activatePump(i,0);
+    } 
+    pumpON = 0;
+    Serial.println("Stopping Pumps");
   }
+  if((fanON)&&(fanTimer < millis())){
+    for(int i = 0; i <= 2; i++){
+      activateFan(i,0);
+    } 
+    fanON = 0;
+    Serial.println("Stopping Fans");
+  }
+  
 
 
   //------------------//
@@ -151,27 +166,35 @@ void loop() {
     parCmd = parseInput(command, ',');
 
     // Fan
-    if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0"
+    if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0,time"
         if(command != prevCommand)
         {
           prevCommand = command;
-          for(int i = 0; i < 2; i++){
+          for(int i = 0; i <= 2; i++){
             activateFan(i,(parCmd[i+1]).toInt());
-          } 
+          }
+          fanON = 1;
+          fanTimer = millis() + parCmd[4].toInt(); 
+          Serial.println("Fans Activated");
         }
     // Pump
-    }else if(parCmd[0] == "pump") {                          // Is looking for a command that looks like "pump,0,0,0,0"
+    }else if(parCmd[0] == "pump") {                          // Is looking for a command that looks like "pump,0,0,0,time"
         if(command != prevCommand)
         {
           prevCommand = command;
-          for(int i = 0; i < 3; i++){
+          for(int i = 0; i <= 2; i++){
             activatePump(i,(parCmd[i+1]).toInt());
-          } 
+          }
+          pumpON = 1;
+          pumpTimer = millis() + parCmd[4].toInt();
+          Serial.println("Pumps Activated");
         }
     // Servo
     }else if (parCmd[0] == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
       //activate servo with speed being the token
-      myLSS.move((parCmd[1]).toInt());
+      //myLSS.move((parCmd[1]).toInt());
+      myLSS.moveRelative(((parCmd[1]).toInt())*10);
+      Serial.println(myLSS.getPosition());
     } else if (parCmd[0] == "ping") {
       Serial.println("pong");
     } else if (parCmd[0] == "time") {
@@ -197,7 +220,7 @@ void activateFan(int num, int truFal){
 }
 
 void activatePump(int num, int truFal){
-  digitalWrite(38+num, truFal);
+  digitalWrite(39+num, truFal);
 }
 
 std::vector<String> parseInput(String input, const char delim) {
