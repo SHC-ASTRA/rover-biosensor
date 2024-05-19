@@ -195,6 +195,9 @@ void loop() {
       //myLSS.move((parCmd[1]).toInt());
       myLSS.moveRelative(((parCmd[1]).toInt())*10);
       Serial.println(myLSS.getPosition());
+    } else if (parCmd[0] == "servoReset") {
+      myLSS.reset();
+      Serial.println("Servo Reset");
     } else if (parCmd[0] == "ping") {
       Serial.println("pong");
     } else if (parCmd[0] == "time") {
