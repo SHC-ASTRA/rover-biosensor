@@ -17,7 +17,7 @@
 // Our own resources
 #include "AstraMotors.h"
 #include "AstraCAN.h"
-//#include "AstraSensors.h" // Unused, only sensor on FAERIE is 
+//#include "AstraSensors.h" // Unused, only sensor on FAERIE is SHT
 #include "Adafruit_SHT31.h"
 #include "TeensyThreads.h"
 
@@ -44,6 +44,8 @@ const long COMMS_UART_BAUD = 9600;
 const int SERVO_MIN =  500;
 const int SERVO_MAX = 2500;
 
+unsigned CAN_ID = 6;
+
 //------------------------//
 // Classes for components //
 //------------------------//
@@ -55,8 +57,9 @@ Servo servo;
 // SHT 31 in SCABBARD
 Adafruit_SHT31 sht31 = Adafruit_SHT31(); // Faerie HUM/TEMP Sensor
 
+// Last millis value that sht temp and hum data was sent to socket
+uint32_t lastDataSend = 0;
 
-unsigned CAN_ID = 6;
 
 //Setting up for CAN0 line
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
@@ -64,13 +67,9 @@ FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 //AstraMotors(int setMotorID, int setCtrlMode, bool inv, int setMaxSpeed, float setMaxDuty)
 AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);//Drill
 
-
 // Last millis value that the motor was sent a duty cycle
 unsigned long lastAccel;
 
-
-// Last millis value that sht temp and hum data was sent to socket
-uint32_t lastDataSend = 0;
 
 
 //------------//
@@ -135,7 +134,7 @@ void setup() {
     // Heartbeat //
     //-----------//
 
-    //TEMPORARY FIX, until we get a dedicated microcontroller for heartbeat propogation
+    // Heartbeat propogation
     threads.addThread(loopHeartbeats);
 
 }
@@ -238,9 +237,9 @@ void loop() {
 
         // Comes from ROS -> socket raspi ->UART-> socket teensy 4.1 ->UART-> FAERIE
         if(command == "faerie") { 
-            //remove first argument, which is "faerie" to tell socket teensy to redirect to faerie
+            // Remove first argument, which is "faerie" to tell socket teensy to redirect to faerie
             args.erase(args.begin()); 
-            // Our command is not "faerie"
+            // Our command is not "faerie", but what comes after it
             command = args[0].toLowerCase();
         }
 
@@ -257,18 +256,15 @@ void loop() {
         // general //
         //---------//
         /**/ if(command == "ping") {
-            // Serial.println("pong");
             output += "pong\n";
         }
         
         else if(command == "time") {
-            // Serial.println(millis());
             output += millis();
             output += '\n';
         }
         
         else if(command == "line") {
-            // Serial.println("-------------");
             output += "-------------";
         }
 
@@ -311,12 +307,10 @@ void loop() {
             }
 
             else if(subcommand == "laser") {
-                if(args[2] == "on") {
+                if(args[2] == "on")
                     digitalWrite(LASER_PIN, HIGH);
-                }
-                else {
+                else
                     digitalWrite(LASER_PIN, LOW);
-                }
             }
 
         }
@@ -331,11 +325,9 @@ void loop() {
             /**/ if(subcommand == "sendtemp") {
                 float temp = sht31.readTemperature();
                 if(!isnan(temp)) {
-                    // Serial.println(sht31.readTemperature());
                     output += temp;
                     output += '\n';
                 } else {
-                    // Serial.println("Failed to read temperature.");
                     output += "Failed to read temperature.\n";
                 }
             }
@@ -343,21 +335,17 @@ void loop() {
             else if(subcommand == "sendhum") {
                 float hum = sht31.readHumidity();
                 if(!isnan(hum)) {
-                    // Serial.println(sht31.readHumidity());
                     output += hum;
                     output += '\n';
                 } else {
-                    // Serial.println("Failed to read humidity.");
                     output += "Failed to read humidity.\n";
                 }
             }
 
             else if(subcommand == "sendheater") {
                 if(sht31.isHeaterEnabled()) {
-                    // Serial.println("true");
                     output += "true\n";
                 } else {
-                    // Serial.println("false");
                     output += "false\n";
                 }
             }
