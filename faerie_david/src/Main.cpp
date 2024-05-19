@@ -180,7 +180,7 @@ void loop() {
     if(millis()-lastDataSend >= 1000) {
         lastDataSend = millis();
 
-        sendSHTData();
+        COMMS_UART.println(getSHTData());
     }
 
     
@@ -351,25 +351,7 @@ void loop() {
             }
 
             else if(subcommand == "sendsht") {
-                output += "faeriesht,";
-
-                float temp = sht31.readTemperature();
-                float hum = sht31.readHumidity();
-
-                // Verify temperature reading
-                if(!isnan(temp))
-                    output += temp;
-                else
-                    output += "FAIL";
-                
-                output += ',';
-
-                // Verify humidity reading
-                if(!isnan(hum))
-                    output += hum;
-                else
-                    output += "FAIL";
-                
+                output += getSHTData();
                 output += '\n';
             }
         }
@@ -458,29 +440,37 @@ void loopHeartbeats(){
 
 }
 
-// Poll SHT and send temperature and humidity data to socket over UART
+// Poll SHT and format temperature and humidity data into String
 // in format "faeriesht,`{temperature}`,`{humidity}`"
-void sendSHTData(void) {
+// Temperature and humidity are rounded to 2 decimal places
+String getSHTData(void) {
 
-    COMMS_UART.print("faeriesht,");
-    
     float temp = sht31.readTemperature();
     float hum = sht31.readHumidity();
 
+    String res;
+    res.reserve(25); // Memory safety. Ex: "faeriesht,150.24,138.58"
+    res += "faeriesht,";
+
     // Verify temperature reading
     if(!isnan(temp))
-        COMMS_UART.print(temp);
+        res += roundTwo(temp); // Ex. 25.38
     else
-        COMMS_UART.print("FAIL");
+        res += "FAIL";
     
-    COMMS_UART.print(',');
+    res += ',';
 
     // Verify humidity reading
     if(!isnan(hum))
-        COMMS_UART.print(hum);
+        res += roundTwo(hum); // Ex. 28.25
     else
-        COMMS_UART.print("FAIL");
-    
-    COMMS_UART.print('\n');
+        res += "FAIL";
 
+    return res;
+}
+
+// Round float to two decimal places
+// Ex: 10.328385 -> 10.33
+inline int roundTwo(const float num) {
+    return roundf(num * 100) / 100;
 }
