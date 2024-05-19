@@ -190,11 +190,23 @@ void loop() {
           Serial.println("Pumps Activated");
         }
     // Servo
-    }else if (parCmd[0] == "mainServo") {         // Is looking for a command that looks like "ctrl,x" where 0<x<1
+    } else if (parCmd[0] == "servoRelative") {         // Is looking for a command that looks like "srvR,x" where is how far you want the servo to move
       //activate servo with speed being the token
       //myLSS.move((parCmd[1]).toInt());
       myLSS.moveRelative(((parCmd[1]).toInt())*10);
       Serial.println(myLSS.getPosition());
+    } else if (parCmd[0] == "servoFullRetract") {         // 
+      myLSS.move(-900);
+      Serial.println("Full Retractig CITADEL arm");
+    } else if (parCmd[0] == "servoHalf") {         // 
+      myLSS.move(0);
+      Serial.println("Setting arm to half extend");
+    } else if (parCmd[0] == "servoExtend") {         // 
+      myLSS.moveRelative(20);
+      Serial.println("Extending CITADEL arm");
+    } else if (parCmd[0] == "servoRetract") {         // 
+      myLSS.moveRelative(-20);
+      Serial.println("Retractig CITADEL arm");
     } else if (parCmd[0] == "servoReset") {
       myLSS.reset();
       Serial.println("Servo Reset");
