@@ -78,7 +78,8 @@ unsigned long lastAccel;
 
 void loopHeartbeats();
 void parseInput(String input, std::vector<String>& args, const char delim);
-void sendSHTData(void);
+String getSHTData(void);
+inline int roundTwo(const float num);
 
 //-------------//
 // Begin Setup //
