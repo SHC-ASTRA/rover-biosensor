@@ -165,31 +165,44 @@ void loop() {
     vector<String> parCmd = {};
     parCmd = parseInput(command, ',');
 
-    // Fan
-    if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0,time"
-        if(command != prevCommand)
-        {
-          prevCommand = command;
-          for(int i = 0; i <= 2; i++){
-            activateFan(i,(parCmd[i+1]).toInt());
-          }
-          fanON = 1;
-          fanTimer = millis() + parCmd[4].toInt(); 
-          Serial.println("Fans Activated");
-        }
-    // Pump
-    }else if(parCmd[0] == "pump") {                          // Is looking for a command that looks like "pump,0,0,0,time"
-        if(command != prevCommand)
-        {
-          prevCommand = command;
-          for(int i = 0; i <= 2; i++){
-            activatePump(i,(parCmd[i+1]).toInt());
-          }
-          pumpON = 1;
-          pumpTimer = millis() + parCmd[4].toInt();
-          Serial.println("Pumps Activated");
-        }
-    // Servo
+    // Fans
+    if (parCmd[0] == "fan1") {                          // Is looking for a command that looks like "fan,0,0,0,time" 
+      digitalWrite(31, 1);
+      fanON = 1;
+      fanTimer = millis() + parCmd[1].toInt(); 
+      Serial.println("Fan1 Activated");
+
+    } else if (parCmd[0] == "fan2") {                          // Is looking for a command that looks like "fan,0,0,0,time"
+      digitalWrite(32, 1);
+      fanON = 1;
+      fanTimer = millis() + parCmd[1].toInt(); 
+      Serial.println("Fan2 Activated");
+
+    } else if (parCmd[0] == "fan3") {                          // Is looking for a command that looks like "fan,0,0,0,time"
+      digitalWrite(33, 1);
+      fanON = 1;
+      fanTimer = millis() + parCmd[1].toInt(); 
+      Serial.println("Fan3 Activated");
+
+    // Pumps
+    } else if(parCmd[0] == "pump1") {                          // Is looking for a command that looks like "pump,0,0,0,time"
+      digitalWrite(39, 1);
+      pumpON = 1;
+      pumpTimer = millis() + parCmd[1].toInt();
+      Serial.println("Pump1 Activated");
+
+    } else if(parCmd[0] == "pump2") {                          // Is looking for a command that looks like "pump,0,0,0,time"
+      digitalWrite(40, 1);
+      pumpON = 1;
+      pumpTimer = millis() + parCmd[1].toInt();
+      Serial.println("Pump2 Activated");
+      
+    } else if(parCmd[0] == "pump3") {                          // Is looking for a command that looks like "pump,0,0,0,time"
+      digitalWrite(41, 1);
+      pumpON = 1;
+      pumpTimer = millis() + parCmd[1].toInt();
+      Serial.println("Pump3 Activated");
+      
     } else if (parCmd[0] == "servoRelative") {         // Is looking for a command that looks like "srvR,x" where is how far you want the servo to move
       //activate servo with speed being the token
       //myLSS.move((parCmd[1]).toInt());
@@ -230,9 +243,7 @@ void loop() {
 //                                                       //
 //-------------------------------------------------------//
 
-void activateFan(int num, int truFal){
-  digitalWrite(31+num, truFal);
-}
+
 
 void activatePump(int num, int truFal){
   digitalWrite(39+num, truFal);
