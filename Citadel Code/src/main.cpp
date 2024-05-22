@@ -117,16 +117,16 @@ void loop() {
 
   
   if((pumpON)&&(pumpTimer < millis())){
-    for(int i = 0; i <= 2; i++){
-      activatePump(i,0);
-    } 
+    digitalWrite(31, 0);
+    digitalWrite(32, 0);
+    digitalWrite(33, 0);
     pumpON = 0;
     Serial.println("Stopping Pumps");
   }
   if((fanON)&&(fanTimer < millis())){
-    for(int i = 0; i <= 2; i++){
-      activateFan(i,0);
-    } 
+    digitalWrite(39, 0);
+    digitalWrite(40, 0);
+    digitalWrite(41, 0);
     fanON = 0;
     Serial.println("Stopping Fans");
   }
