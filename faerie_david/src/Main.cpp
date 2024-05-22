@@ -266,7 +266,7 @@ void loop() {
         }
         
         else if(command == "line") {
-            output += "-------------";
+            output += "-------------\n";
         }
 
         else if(command == "led") {
