@@ -276,6 +276,10 @@ void loop() {
                 digitalWrite(LED_PIN, LOW);
         }
 
+        else if(command == "stop") {
+            Motor1.setDuty(0);
+        }
+
         //------//
         // ctrl //
         //------//
