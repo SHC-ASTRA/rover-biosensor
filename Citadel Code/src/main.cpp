@@ -57,12 +57,11 @@ void setup() {
     pinMode(40, OUTPUT);
     pinMode(41, OUTPUT);
 
-    digitalWrite(33, LOW); // Fan 1 
-    digitalWrite(31, LOW); // Fan 2 
-    digitalWrite(32, LOW); // Fan 3 
+    digitalWrite(31, LOW); // Fan 1 
+    digitalWrite(32, LOW); // Fan 2 
+    digitalWrite(33, LOW); // Fan 3 
 
-    digitalWrite(37, LOW); // Pump 1 
-    digitalWrite(38, LOW); // Pump 2 
+    digitalWrite(39, LOW); // Pump 2 
     digitalWrite(40, LOW); // Pump 3 
     digitalWrite(41, LOW); // Pump 4 
 
@@ -252,6 +251,14 @@ void loop() {
     } else if (parCmd[0] == "servoReset") {
       myLSS.reset();
       Serial.println("Servo Reset");
+    } else if (parCmd[0] == "shutdown") {
+      digitalWrite(31, 0);
+      digitalWrite(32, 0);
+      digitalWrite(33, 0);
+      digitalWrite(39, 0);
+      digitalWrite(40, 0);
+      digitalWrite(41, 0);
+      myLSS.reset();
     } else if (parCmd[0] == "ping") {
       Serial.println("pong");
     } else if (parCmd[0] == "time") {
