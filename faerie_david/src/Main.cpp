@@ -39,7 +39,7 @@ using namespace std;
 //-----------//
 
 const long SERIAL_BAUD     = 115200;
-const long COMMS_UART_BAUD = 9600;
+const long COMMS_UART_BAUD = 115200;
 
 const int SERVO_MIN =  500;
 const int SERVO_MAX = 2500;
