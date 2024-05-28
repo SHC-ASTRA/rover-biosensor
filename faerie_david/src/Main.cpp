@@ -12,6 +12,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <cmath> // for abs()
 #include <Servo.h> // For SCABBARD servo (unused)
 
 // Our own resources
@@ -289,7 +290,20 @@ void loop() {
 
             /**/ if(subcommand == "duty") {
                 // CW/+ = CLOSE, CCW/- = OPEN
-                Motor1.setDuty(args[2].toFloat());
+
+                float val = args[2].toFloat();
+
+                // Make it easier to stop the motor with the slider
+                if(abs(val) < 0.03)
+                    val = 0;
+
+                // Safety check
+                if(isnan(val) || val > 1) {
+                    val = 0;
+                    output += "faerieerror,invalidduty";
+                }
+
+                Motor1.setDuty(val);
             }
 
             else if(subcommand == "servo") {
