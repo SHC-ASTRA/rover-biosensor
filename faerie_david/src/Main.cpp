@@ -298,7 +298,7 @@ void loop() {
                     val = 0;
 
                 // Safety check
-                if(isnan(val) || val > 1) {
+                if(isnan(val) || abs(val) > 1) {
                     val = 0;
                     output += "faerieerror,invalidduty";
                 }
