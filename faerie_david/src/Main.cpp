@@ -72,6 +72,29 @@ AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);//Drill
 unsigned long lastAccel;
 
 
+// Shake mode variables
+
+// Shake interval
+const uint32_t SHAKEINTERVAL = 250;
+
+// How long to shake
+const uint32_t SHAKEDURATION = 2500;
+
+const float SHAKEOPTIONS[5] = {0.1, 0.2, 0.3, 0.4, 0.5};
+
+// millis value when shaking started
+uint32_t shakeStart = 0;
+
+// Last millis value of shake update
+uint32_t lastShake = 0;
+
+// Whether or not currently shaking
+bool shakeMode = false;
+
+// Positive or negative to shake in open or close dir
+int shakeDir = 1;
+
+
 
 //------------//
 // Prototypes //
@@ -183,6 +206,26 @@ void loop() {
         lastDataSend = millis();
 
         COMMS_UART.println(getSHTData());
+    }
+
+
+
+    // Shake
+    if(shakeMode && millis()-lastShake >= SHAKEINTERVAL) {
+        lastShake = millis();
+
+        unsigned ind = rand() % 5; // 0-4 inclusive, seeded by command
+
+        if(ind < 0 || ind > 4)
+            ind = 0;
+
+        Motor1.setDuty( shakeDir * SHAKEOPTIONS[ind] );
+
+        // Don't shake for longer than SHAKEDURATION
+        if(shakeStart + SHAKEDURATION <= millis()) {
+            shakeMode = false;
+            Motor1.setDuty(0);
+        }
     }
 
     
@@ -304,6 +347,24 @@ void loop() {
                 }
 
                 Motor1.setDuty(val);
+            }
+
+            else if(subcommand == "shake") {
+                shakeMode = true;
+
+                if(args[2] == "close")
+                    shakeDir = 1;
+                if(args[2] == "open")
+                    shakeDir = -1;
+                else
+                    shakeDir = 1;
+
+                // Shake immediately
+                lastShake = 0;
+                shakeStart = millis();
+
+                // Seed rand() for random duty cycles
+                srand(millis());
             }
 
             else if(subcommand == "servo") {
