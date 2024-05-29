@@ -393,6 +393,10 @@ void loop() {
                     digitalWrite(LASER_PIN, LOW);
             }
 
+            else if(subcommand == "loadsht") {
+                sht31.begin(0x44);
+            }
+
         }
         
         //------//
