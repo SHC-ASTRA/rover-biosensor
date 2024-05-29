@@ -529,16 +529,16 @@ void loopHeartbeats(){
 // Temperature and humidity are rounded to 2 decimal places
 String getSHTData(void) {
 
-    float temp = sht31.readTemperature();
-    float hum = sht31.readHumidity();
+    float temp, hum;
+    sht31.readBoth(&temp, &hum);
 
-    String res;
-    res.reserve(25); // Memory safety. Ex: "faeriesht,150.24,138.58"
+    String res; // concatenated result of temp and hum data
+    res.reserve(23); // Memory safety. Ex: "faeriesht,150.2,138.6"
     res += "faeriesht,";
 
     // Verify temperature reading
     if(!isnan(temp))
-        res += roundTwo(temp); // Ex. 25.38
+        res += String(temp, 1); // Ex. 25.38 (Use constructor to round 1 decimal place)
     else
         res += "FAIL";
     
@@ -546,15 +546,9 @@ String getSHTData(void) {
 
     // Verify humidity reading
     if(!isnan(hum))
-        res += roundTwo(hum); // Ex. 28.25
+        res += String(hum, 1); // Ex. 28.25
     else
         res += "FAIL";
 
     return res;
-}
-
-// Round float to two decimal places
-// Ex: 10.328385 -> 10.33
-inline int roundTwo(const float num) {
-    return roundf(num * 100) / 100;
 }
