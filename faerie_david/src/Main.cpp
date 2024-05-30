@@ -9,16 +9,17 @@
 
 // Standard Includes
 #include <Arduino.h>
+#include <Servo.h>  // For SCABBARD servo (unused)
+
+#include <cmath>  // for abs()
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cmath> // for abs()
-#include <Servo.h> // For SCABBARD servo (unused)
 
 // Our own resources
-#include "AstraMotors.h"
 #include "AstraCAN.h"
-//#include "AstraSensors.h" // Unused, only sensor on FAERIE is SHT
+#include "AstraMotors.h"
+// #include "AstraSensors.h" // Unused, only sensor on FAERIE is SHT
 #include "Adafruit_SHT31.h"
 #include "TeensyThreads.h"
 
@@ -29,7 +30,7 @@ using namespace std;
 // PINS //
 //------//
 
-#define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
+#define LED_PIN 13  // Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
 #define LASER_PIN 15
 #define SERVO_PWM_PIN 1
 #define COMMS_UART Serial4
@@ -39,10 +40,10 @@ using namespace std;
 // Constants //
 //-----------//
 
-const long SERIAL_BAUD     = 115200;
+const long SERIAL_BAUD = 115200;
 const long COMMS_UART_BAUD = 115200;
 
-const int SERVO_MIN =  500;
+const int SERVO_MIN = 500;
 const int SERVO_MAX = 2500;
 
 unsigned CAN_ID = 6;
@@ -56,17 +57,17 @@ Servo servo;
 
 
 // SHT 31 in SCABBARD
-Adafruit_SHT31 sht31 = Adafruit_SHT31(); // Faerie HUM/TEMP Sensor
+Adafruit_SHT31 sht31 = Adafruit_SHT31();  // Faerie HUM/TEMP Sensor
 
 // Last millis value that sht temp and hum data was sent to socket
 uint32_t lastDataSend = 0;
 
 
-//Setting up for CAN0 line
+// Setting up for CAN0 line
 FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
 
-//AstraMotors(int setMotorID, int setCtrlMode, bool inv, int setMaxSpeed, float setMaxDuty)
-AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);//Drill
+// AstraMotors(int setMotorID, int setCtrlMode, bool inv, int setMaxSpeed, float setMaxDuty)
+AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);  // Drill
 
 // Last millis value that the motor was sent a duty cycle
 unsigned long lastAccel;
@@ -110,13 +111,12 @@ inline int roundTwo(const float num);
 //-------------//
 
 void setup() {
-
     //-----------------//
     // Initialize Pins //
     //-----------------//
-  
+
     Serial.begin(SERIAL_BAUD);
-    COMMS_UART.begin(COMMS_UART_BAUD); // for comms with Arm Socket Teensy/RasPi
+    COMMS_UART.begin(COMMS_UART_BAUD);  // for comms with Arm Socket Teensy/RasPi
 
     // Teensy built-in LED
     pinMode(LED_PIN, OUTPUT);
@@ -147,9 +147,9 @@ void setup() {
     // Initialize Sensors //
     //--------------------//
 
-    if(!sht31.begin(0x44)) { // HUM/Temp
+    if (!sht31.begin(0x44)) {  // HUM/Temp
         Serial.println("Couldn't find SHT31!");
-        //while(1) delay(1);
+        // while(1) delay(1);
     } else {
         Serial.println("SHT Initialized.");
     }
@@ -161,7 +161,6 @@ void setup() {
 
     // Heartbeat propogation
     threads.addThread(loopHeartbeats);
-
 }
 
 
@@ -184,25 +183,24 @@ void setup() {
 //-------------------------------------------------//
 
 void loop() {
-
     // Accelerate the motors
-    if(millis()-lastAccel >= 50) {
+    if (millis() - lastAccel >= 50) {
         lastAccel = millis();
         Motor1.UpdateForAcceleration();
 
-        if(Motor1.getControlMode() == 1)//send the correct duty cycle to the motors
+        if (Motor1.getControlMode() == 1)  // send the correct duty cycle to the motors
         {
             sendDutyCycle(Can0, CAN_ID, Motor1.getDuty());
-        
+
         } else {
-            //pass for RPM control mode
+            // pass for RPM control mode
         }
     }
 
 
 
     // Send SHT temp and hum data to socket once per second
-    if(millis()-lastDataSend >= 1000) {
+    if (millis() - lastDataSend >= 1000) {
         lastDataSend = millis();
 
         COMMS_UART.println(getSHTData());
@@ -211,24 +209,23 @@ void loop() {
 
 
     // Shake
-    if(shakeMode && millis()-lastShake >= SHAKEINTERVAL) {
+    if (shakeMode && millis() - lastShake >= SHAKEINTERVAL) {
         lastShake = millis();
 
-        unsigned ind = rand() % 5; // 0-4 inclusive, seeded by command
+        unsigned ind = rand() % 5;  // 0-4 inclusive, seeded by command
 
-        if(ind < 0 || ind > 4)
+        if (ind < 0 || ind > 4)
             ind = 0;
 
-        Motor1.setDuty( shakeDir * SHAKEOPTIONS[ind] );
+        Motor1.setDuty(shakeDir * SHAKEOPTIONS[ind]);
 
         // Don't shake for longer than SHAKEDURATION
-        if(shakeStart + SHAKEDURATION <= millis()) {
+        if (shakeStart + SHAKEDURATION <= millis()) {
             shakeMode = false;
             Motor1.setDuty(0);
         }
     }
 
-    
 
 
     //-------------------//
@@ -253,27 +250,26 @@ void loop() {
     // Allows to use the same code to parse input wherever it comes from
     bool inputAvailable = false;
     int inputMethod;
-    if(Serial.available()) {
+    if (Serial.available()) {
         inputAvailable = true;
         inputMethod = 0;
-    } else if(COMMS_UART.available()) {
+    } else if (COMMS_UART.available()) {
         inputAvailable = true;
         inputMethod = COMMS_UART_NUM;
     }
 
     if (inputAvailable) {
-
         // Output to be sent to either Serial or COMMS_UART depending on which was used
         String output = "";
 
         String input;
-        if(inputMethod == 0)  // Input comes via USB
-            input = Serial.readStringUntil('\n'); //Take str input from Serial
-        
-        else if(inputMethod == COMMS_UART_NUM)  // Input comes via UART from Arm
-            input = COMMS_UART.readStringUntil('\n'); //Take str input from UART
+        if (inputMethod == 0)                      // Input comes via USB
+            input = Serial.readStringUntil('\n');  // Take str input from Serial
 
-        
+        else if (inputMethod == COMMS_UART_NUM)        // Input comes via UART from Arm
+            input = COMMS_UART.readStringUntil('\n');  // Take str input from UART
+
+
         input.trim();
         std::vector<String> args = {};
         parseInput(input, args, ',');
@@ -281,9 +277,9 @@ void loop() {
 
 
         // Comes from ROS -> socket raspi ->UART-> socket teensy 4.1 ->UART-> FAERIE
-        if(command == "faerie") { 
+        if (command == "faerie") {
             // Remove first argument, which is "faerie" to tell socket teensy to redirect to faerie
-            args.erase(args.begin()); 
+            args.erase(args.begin());
             // Our command is not "faerie", but what comes after it
             command = args[0].toLowerCase();
         }
@@ -296,52 +292,52 @@ void loop() {
         // Commands have been documented here:
         // https://docs.google.com/spreadsheets/d/16RYq-beKFbWoqob2tEWtEd6SiWK38EuTyW-QRfZV-Ow/edit#gid=532390044
         //
-        
+
         //---------//
         // general //
         //---------//
-        /**/ if(command == "ping") {
+        /**/ if (command == "ping") {
             output += "pong\n";
         }
-        
-        else if(command == "time") {
+
+        else if (command == "time") {
             output += millis();
             output += '\n';
         }
-        
-        else if(command == "line") {
+
+        else if (command == "line") {
             output += "-------------\n";
         }
 
-        else if(command == "led") {
-            if(args[1] == "on")
+        else if (command == "led") {
+            if (args[1] == "on")
                 digitalWrite(LED_PIN, HIGH);
             else
                 digitalWrite(LED_PIN, LOW);
         }
 
-        else if(command == "stop") {
+        else if (command == "stop") {
             Motor1.setDuty(0);
         }
 
         //------//
         // ctrl //
         //------//
-        else if(command == "ctrl") { // ctrl //
+        else if (command == "ctrl") {  // ctrl //
             String subcommand = args[1].toLowerCase();
-            
 
-            /**/ if(subcommand == "duty") {
+
+            /**/ if (subcommand == "duty") {
                 // CW/+ = CLOSE, CCW/- = OPEN
 
                 float val = args[2].toFloat();
 
                 // Make it easier to stop the motor with the slider
-                if(abs(val) < 0.03)
+                if (abs(val) < 0.03)
                     val = 0;
 
                 // Safety check
-                if(isnan(val) || abs(val) > 1) {
+                if (isnan(val) || abs(val) > 1) {
                     val = 0;
                     output += "faerieerror,invalidduty";
                 }
@@ -349,12 +345,12 @@ void loop() {
                 Motor1.setDuty(val);
             }
 
-            else if(subcommand == "shake") {
+            else if (subcommand == "shake") {
                 shakeMode = true;
 
-                if(args[2] == "close")
+                if (args[2] == "close")
                     shakeDir = 1;
-                if(args[2] == "open")
+                if (args[2] == "open")
                     shakeDir = -1;
                 else
                     shakeDir = 1;
@@ -367,58 +363,58 @@ void loop() {
                 srand(millis());
             }
 
-            else if(subcommand == "servo") {
+            else if (subcommand == "servo") {
                 servo.write(args[2].toInt());
             }
 
-            else if(subcommand == "stop") {
+            else if (subcommand == "stop") {
                 Motor1.setDuty(0);
             }
 
-            else if(subcommand == "id") {
+            else if (subcommand == "id") {
                 identifyDevice(Can0, CAN_ID);
             }
 
-            else if(subcommand == "shtheater") {
-                if(args[2] == "on")
+            else if (subcommand == "shtheater") {
+                if (args[2] == "on")
                     sht31.heater(true);
                 else
                     sht31.heater(false);
             }
 
-            else if(subcommand == "laser") {
-                if(args[2] == "on")
+            else if (subcommand == "laser") {
+                if (args[2] == "on")
                     digitalWrite(LASER_PIN, HIGH);
                 else
                     digitalWrite(LASER_PIN, LOW);
             }
 
-            else if(subcommand == "loadsht") {
+            else if (subcommand == "loadsht") {
                 sht31.begin(0x44);
             }
 
         }
-        
+
         //------//
         // data //
         //------//
-        else if(command == "data") { // data //
+        else if (command == "data") {  // data //
             String subcommand = args[1].toLowerCase();
 
 
-            /**/ if(subcommand == "sendtemp") {
+            /**/ if (subcommand == "sendtemp") {
                 float temp = sht31.readTemperature();
-                if(!isnan(temp)) {
+                if (!isnan(temp)) {
                     output += temp;
                     output += '\n';
                 } else {
                     output += "Failed to read temperature.\n";
                 }
             }
-            
-            else if(subcommand == "sendhum") {
+
+            else if (subcommand == "sendhum") {
                 float hum = sht31.readHumidity();
-                if(!isnan(hum)) {
+                if (!isnan(hum)) {
                     output += hum;
                     output += '\n';
                 } else {
@@ -426,15 +422,15 @@ void loop() {
                 }
             }
 
-            else if(subcommand == "sendheater") {
-                if(sht31.isHeaterEnabled()) {
+            else if (subcommand == "sendheater") {
+                if (sht31.isHeaterEnabled()) {
                     output += "true\n";
                 } else {
                     output += "false\n";
                 }
             }
 
-            else if(subcommand == "sendsht") {
+            else if (subcommand == "sendsht") {
                 output += getSHTData();
                 output += '\n';
             }
@@ -444,17 +440,14 @@ void loop() {
         // END COMMANDS //
         //--------------//
 
-        if(output.length() > 1) {
-            if(inputMethod == 0)
+        if (output.length() > 1) {
+            if (inputMethod == 0)
                 Serial.print(output);
-            else if(inputMethod == COMMS_UART_NUM)
+            else if (inputMethod == COMMS_UART_NUM)
                 COMMS_UART.print(output);
         }
-
     }
-
 }
-
 
 
 
@@ -475,33 +468,35 @@ void loop() {
 // Ex: "ctrl,led,on" => {ctrl,led,on}
 // Equivalent to Python's `.split()`
 void parseInput(const String input, std::vector<String>& args, const char delim = ',') {
-    //Modified from https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813/9
+    // Modified from
+    // https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813/9
 
     // Index of previously found delim
     int lastIndex = -1;
     // Index of currently found delim
     int index = -1;
-    // because lastIndex=index, lastIndex starts at -1, so with lastIndex+1, first search begins at 0
+    // lastIndex=index, so lastIndex starts at -1, and with lastIndex+1, first search begins at 0
 
     // if empty input for some reason, don't do anything
-    if(input.length() == 0)
+    if (input.length() == 0)
         return;
 
     unsigned count = 0;
-    while (count++, count < 200 /*arbitrary limit on number of delims because while(true) is scary*/) {
+    while (count++,
+           count < 200 /*arbitrary limit on number of delims because while(true) is scary*/) {
         lastIndex = index;
         // using lastIndex+1 instead of input = input.substring to reduce memory impact
-        index = input.indexOf(delim, lastIndex+1);
-        if (index == -1) { // No instance of delim found in input
+        index = input.indexOf(delim, lastIndex + 1);
+        if (index == -1) {  // No instance of delim found in input
             // If no delims are found at all, then lastIndex+1 == 0, so whole string is passed.
             // Otherwise, only the last part of input is passed because of lastIndex+1.
-            args.push_back(input.substring(lastIndex+1));
+            args.push_back(input.substring(lastIndex + 1));
             // Exit the loop when there are no more delims
             break;
-        } else { // delim found
+        } else {  // delim found
             // If this is the first delim, lastIndex+1 == 0, so starts from beginning
             // Otherwise, starts from last found delim with lastIndex+1
-            args.push_back(input.substring(lastIndex+1, index));
+            args.push_back(input.substring(lastIndex + 1, index));
         }
     }
 
@@ -509,6 +504,7 @@ void parseInput(const String input, std::vector<String>& args, const char delim 
 }
 
 
+// clang-format off: to better sync with other people's code
 void loopHeartbeats(){
     Can0.begin();
     Can0.setBaudRate(1000000);
@@ -523,30 +519,30 @@ void loopHeartbeats(){
     }
 
 }
+// clang-format on
 
 // Poll SHT and format temperature and humidity data into String
 // in format "faeriesht,`{temperature}`,`{humidity}`"
 // Temperature and humidity are rounded to 2 decimal places
 String getSHTData(void) {
-
     float temp, hum;
     sht31.readBoth(&temp, &hum);
 
-    String res; // concatenated result of temp and hum data
-    res.reserve(23); // Memory safety. Ex: "faeriesht,150.2,138.6"
+    String res;       // concatenated result of temp and hum data
+    res.reserve(23);  // Memory safety. Ex: "faeriesht,150.2,138.6"
     res += "faeriesht,";
 
     // Verify temperature reading
-    if(!isnan(temp))
-        res += String(temp, 1); // Ex. 25.38 (Use constructor to round 1 decimal place)
+    if (!isnan(temp))
+        res += String(temp, 1);  // Ex. 25.38 (Use constructor to round 1 decimal place)
     else
         res += "FAIL";
-    
+
     res += ',';
 
     // Verify humidity reading
-    if(!isnan(hum))
-        res += String(hum, 1); // Ex. 28.25
+    if (!isnan(hum))
+        res += String(hum, 1);  // Ex. 28.25
     else
         res += "FAIL";
 
