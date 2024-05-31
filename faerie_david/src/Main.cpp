@@ -464,9 +464,14 @@ void loop() {
 //-------------------------------------------------------//
 
 
-// Parse `input` into `args` separated by `delim`
-// Ex: "ctrl,led,on" => {ctrl,led,on}
-// Equivalent to Python's `.split()`
+/**
+ * `input` into `args` separated by `delim`; equivalent to Python's `.split`;
+ * Example:  "ctrl,led,on" => `{ctrl,led,on}`
+ * @param input String to be separated
+ * @param args vector<String> to hold separated Strings
+ * @param delim char which separates parts of input
+ * @author David Sharpe, for ASTRA
+ */
 void parseInput(const String input, std::vector<String>& args, const char delim = ',') {
     // Modified from
     // https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813/9
@@ -481,6 +486,7 @@ void parseInput(const String input, std::vector<String>& args, const char delim 
     if (input.length() == 0)
         return;
 
+    // Protection against infinite loop
     unsigned count = 0;
     while (count++,
            count < 200 /*arbitrary limit on number of delims because while(true) is scary*/) {
