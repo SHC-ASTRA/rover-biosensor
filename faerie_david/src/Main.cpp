@@ -318,6 +318,7 @@ void loop() {
 
         else if (command == "stop") {
             Motor1.setDuty(0);
+            shakeMode = false;
         }
 
         //------//
@@ -343,6 +344,10 @@ void loop() {
                 }
 
                 Motor1.setDuty(val);
+
+                // Stop shake if duty is 0
+                if(val == 0)
+                    shakeMode = false;
             }
 
             else if (subcommand == "shake") {
@@ -369,6 +374,7 @@ void loop() {
 
             else if (subcommand == "stop") {
                 Motor1.setDuty(0);
+                shakeMode = false;
             }
 
             else if (subcommand == "id") {
