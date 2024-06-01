@@ -548,7 +548,7 @@ String getSHTData(void) {
     if (!isnan(temp))
         res += String(temp, 1);  // Ex. 25.38 (Use constructor to round 1 decimal place)
     else
-        res += "FAIL";
+        res += "999.9";
 
     res += ',';
 
@@ -556,7 +556,7 @@ String getSHTData(void) {
     if (!isnan(hum))
         res += String(hum, 1);  // Ex. 28.25
     else
-        res += "FAIL";
+        res += "999.9";
 
     return res;
 }
