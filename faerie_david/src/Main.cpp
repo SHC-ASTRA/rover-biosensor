@@ -273,7 +273,8 @@ void loop() {
         input.trim();
         std::vector<String> args = {};
         parseInput(input, args, ',');
-        String command = args[0].toLowerCase();
+        args[0].toLowerCase();
+        String command = args[0];
 
 
         // Comes from ROS -> socket raspi ->UART-> socket teensy 4.1 ->UART-> FAERIE
