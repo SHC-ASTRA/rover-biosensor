@@ -270,11 +270,11 @@ void loop() {
             input = COMMS_UART.readStringUntil('\n');  // Take str input from UART
 
 
-        input.trim();
-        std::vector<String> args = {};
-        parseInput(input, args, ',');
-        args[0].toLowerCase();
-        String command = args[0];
+        input.trim();                   // Remove preceding and trailing whitespace
+        std::vector<String> args = {};  // Initialize empty vector to hold separated arguments
+        parseInput(input, args, ',');   // Separate `input` by commas and place into args vector
+        args[0].toLowerCase();          // Make command case-insensitive
+        String command = args[0];       // To make processing code more readable
 
 
         // Comes from ROS -> socket raspi ->UART-> socket teensy 4.1 ->UART-> FAERIE
@@ -347,7 +347,7 @@ void loop() {
                 Motor1.setDuty(val);
 
                 // Stop shake if duty is 0
-                if(val == 0)
+                if (val == 0)
                     shakeMode = false;
             }
 
