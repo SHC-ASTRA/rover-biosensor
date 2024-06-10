@@ -24,7 +24,6 @@
 #include "TeensyThreads.h"
 
 
-using namespace std;
 
 //------//
 // PINS //
