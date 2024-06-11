@@ -95,6 +95,14 @@ bool shakeMode = false;
 int shakeDir = 1;
 
 
+// How long to wait before stopping the motor after the last cmd was sent
+const uint32_t MOTORTIMEOUT = 30'000;
+
+// Last millis value that a motor command was received
+// Used to stop the motor after MOTORTIMEOUT
+uint32_t lastMotorCmd = 0;
+
+
 
 //------------//
 // Prototypes //
@@ -227,6 +235,14 @@ void loop() {
 
 
 
+    // Motor timeout
+    if (millis() - lastMotorCmd >= MOTORTIMEOUT) {
+        Motor1.setDuty(0);
+        shakeMode = false;
+    }
+
+
+
     //-------------------//
     // Command Receiving //
     //-------------------//
@@ -330,6 +346,7 @@ void loop() {
 
             /**/ if (subcommand == "duty") {
                 // CW/+ = CLOSE, CCW/- = OPEN
+                lastMotorCmd = millis();
 
                 float val = args[2].toFloat();
 
@@ -352,6 +369,7 @@ void loop() {
 
             else if (subcommand == "shake") {
                 shakeMode = true;
+                lastMotorCmd = millis();
 
                 if (args[2] == "close")
                     shakeDir = 1;
