@@ -9,7 +9,6 @@
 
 // Standard Includes
 #include <Arduino.h>
-#include <Servo.h>  // For SCABBARD servo (unused)
 
 #include <cmath>  // for abs()
 #include <iostream>
@@ -18,11 +17,6 @@
 
 // Our own resources
 #include "FAERIE.h"
-#include "AstraMisc.h"
-#include "AstraCAN.h"
-#include "AstraMotors.h"
-#include "Adafruit_SHT31.h"
-#include "TeensyThreads.h"
 
 
 //-----------//
@@ -47,7 +41,7 @@ uint32_t lastDataSend = 0;
 
 
 // Setting up for CAN0 line
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+AstraFCAN Can0;
 
 // AstraMotors(int setMotorID, int setCtrlMode, bool inv, int setMaxSpeed, float setMaxDuty)
 AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);  // Drill
