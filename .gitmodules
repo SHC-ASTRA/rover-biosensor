@@ -1,0 +1,3 @@
+[submodule "faerie_david/.pio/libdeps/teensy40/rover-Embedded-Lib"]
+	path = faerie_david/.pio/libdeps/teensy40/rover-Embedded-Lib
+	url = https://github.com/SHC-ASTRA/rover-Embedded-Lib

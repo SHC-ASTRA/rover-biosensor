@@ -9,41 +9,17 @@
 
 // Standard Includes
 #include <Arduino.h>
-#include <Servo.h>  // For SCABBARD servo (unused)
 
 #include <cmath>  // for abs()
-#include <iostream>
-#include <string>
 #include <vector>
 
 // Our own resources
-#include "AstraCAN.h"
-#include "AstraMotors.h"
-// #include "AstraSensors.h" // Unused, only sensor on FAERIE is SHT
-#include "Adafruit_SHT31.h"
-#include "TeensyThreads.h"
+#include "FAERIE.h"
 
-
-
-//------//
-// PINS //
-//------//
-
-#define LED_PIN 13  // Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
-#define LASER_PIN 15
-#define SERVO_PWM_PIN 1
-#define COMMS_UART Serial4
-#define COMMS_UART_NUM 4
 
 //-----------//
 // Constants //
 //-----------//
-
-const long SERIAL_BAUD = 115200;
-const long COMMS_UART_BAUD = 115200;
-
-const int SERVO_MIN = 500;
-const int SERVO_MAX = 2500;
 
 unsigned CAN_ID = 6;
 
@@ -63,7 +39,7 @@ uint32_t lastDataSend = 0;
 
 
 // Setting up for CAN0 line
-FlexCAN_T4<CAN1, RX_SIZE_256, TX_SIZE_16> Can0;
+AstraFCAN Can0;
 
 // AstraMotors(int setMotorID, int setCtrlMode, bool inv, int setMaxSpeed, float setMaxDuty)
 AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);  // Drill
@@ -109,9 +85,8 @@ uint32_t lastMotorCmd = 0;
 //------------//
 
 void loopHeartbeats();
-void parseInput(String input, std::vector<String>& args, const char delim);
 String getSHTData(void);
-inline int roundTwo(const float num);
+
 
 //-------------//
 // Begin Setup //
@@ -126,19 +101,19 @@ void setup() {
     COMMS_UART.begin(COMMS_UART_BAUD);  // for comms with Arm Socket Teensy/RasPi
 
     // Teensy built-in LED
-    pinMode(LED_PIN, OUTPUT);
-    digitalWrite(LED_PIN, HIGH);
+    pinMode(LED_BUILTIN, OUTPUT);
+    digitalWrite(LED_BUILTIN, HIGH);
 
     // Faerie drill lasers
-    pinMode(LASER_PIN, OUTPUT);
-    digitalWrite(LASER_PIN, LOW);
+    pinMode(PIN_LASER_NMOS, OUTPUT);
+    digitalWrite(PIN_LASER_NMOS, LOW);
 
     // SCABBARD Servo
-    servo.attach(SERVO_PWM_PIN, SERVO_MIN, SERVO_MAX);
+    servo.attach(PIN_SERVO_PWM, SERVO_MIN, SERVO_MAX);
 
     // LED stays on for 2 seconds to show powered on
     delay(2000);
-    digitalWrite(LED_PIN, LOW);
+    digitalWrite(LED_BUILTIN, LOW);
 
     // ------- //
     //   CAN   //
@@ -327,9 +302,9 @@ void loop() {
 
         else if (command == "led") {
             if (args[1] == "on")
-                digitalWrite(LED_PIN, HIGH);
+                digitalWrite(LED_BUILTIN, HIGH);
             else
-                digitalWrite(LED_PIN, LOW);
+                digitalWrite(LED_BUILTIN, LOW);
         }
 
         else if (command == "stop") {
@@ -408,9 +383,9 @@ void loop() {
 
             else if (subcommand == "laser") {
                 if (args[2] == "on")
-                    digitalWrite(LASER_PIN, HIGH);
+                    digitalWrite(PIN_LASER_NMOS, HIGH);
                 else
-                    digitalWrite(LASER_PIN, LOW);
+                    digitalWrite(PIN_LASER_NMOS, LOW);
             }
 
             else if (subcommand == "loadsht") {
@@ -486,52 +461,6 @@ void loop() {
 //    //             //           \//      //////////    //
 //                                                       //
 //-------------------------------------------------------//
-
-
-/**
- * `input` into `args` separated by `delim`; equivalent to Python's `.split`;
- * Example:  "ctrl,led,on" => `{ctrl,led,on}`
- * @param input String to be separated
- * @param args vector<String> to hold separated Strings
- * @param delim char which separates parts of input
- * @author David Sharpe, for ASTRA
- */
-void parseInput(const String input, std::vector<String>& args, const char delim = ',') {
-    // Modified from
-    // https://forum.arduino.cc/t/how-to-split-a-string-with-space-and-store-the-items-in-array/888813/9
-
-    // Index of previously found delim
-    int lastIndex = -1;
-    // Index of currently found delim
-    int index = -1;
-    // lastIndex=index, so lastIndex starts at -1, and with lastIndex+1, first search begins at 0
-
-    // if empty input for some reason, don't do anything
-    if (input.length() == 0)
-        return;
-
-    // Protection against infinite loop
-    unsigned count = 0;
-    while (count++,
-           count < 200 /*arbitrary limit on number of delims because while(true) is scary*/) {
-        lastIndex = index;
-        // using lastIndex+1 instead of input = input.substring to reduce memory impact
-        index = input.indexOf(delim, lastIndex + 1);
-        if (index == -1) {  // No instance of delim found in input
-            // If no delims are found at all, then lastIndex+1 == 0, so whole string is passed.
-            // Otherwise, only the last part of input is passed because of lastIndex+1.
-            args.push_back(input.substring(lastIndex + 1));
-            // Exit the loop when there are no more delims
-            break;
-        } else {  // delim found
-            // If this is the first delim, lastIndex+1 == 0, so starts from beginning
-            // Otherwise, starts from last found delim with lastIndex+1
-            args.push_back(input.substring(lastIndex + 1, index));
-        }
-    }
-
-    // output is via vector<String>& args
-}
 
 
 // clang-format off: to better sync with other people's code
