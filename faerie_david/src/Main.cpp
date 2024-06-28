@@ -11,8 +11,6 @@
 #include <Arduino.h>
 
 #include <cmath>  // for abs()
-#include <iostream>
-#include <string>
 #include <vector>
 
 // Our own resources
