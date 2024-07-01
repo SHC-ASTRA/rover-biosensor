@@ -21,7 +21,7 @@
 // Constants //
 //-----------//
 
-unsigned CAN_ID = 6;
+const unsigned CAN_ID = 6;
 
 //------------------------//
 // Classes for components //
