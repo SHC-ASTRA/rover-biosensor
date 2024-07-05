@@ -9,12 +9,13 @@
 
 // Standard Includes
 #include <Arduino.h>
+#include <Servo.h>  // For SCABBARD servo (unused)
 
 #include <cmath>  // for abs()
-#include <vector>
 
-// Our own resources
 #include "ASTRA.h"
+#include "Adafruit_SHT31.h"
+#include "TeensyThreads.h"
 
 
 //-----------//
