@@ -13,9 +13,12 @@
 
 #include <cmath>  // for abs()
 
-#include "ASTRA.h"
 #include "Adafruit_SHT31.h"
+#include "AstraCAN.h"
+#include "AstraMisc.h"
+#include "AstraMotors.h"
 #include "TeensyThreads.h"
+#include "project/FAERIE.h"
 
 
 //-----------//
