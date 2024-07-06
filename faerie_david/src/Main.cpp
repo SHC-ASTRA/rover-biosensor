@@ -120,6 +120,20 @@ void setup() {
     delay(2000);
     digitalWrite(LED_BUILTIN, LOW);
 
+    // date and time and stuff
+    Serial.println("ASTRA FAERIE.");
+    Serial.println("Compiled on ");
+    Serial.print(__DATE__);
+    Serial.print(" at ");
+    Serial.print(__TIME__);
+    Serial.println(".");
+    COMMS_UART.println("ASTRA FAERIE.");
+    COMMS_UART.println("Compiled on ");
+    COMMS_UART.print(__DATE__);
+    COMMS_UART.print(" at ");
+    COMMS_UART.print(__TIME__);
+    COMMS_UART.println(".");
+
     // ------- //
     //   CAN   //
     // ------- //
