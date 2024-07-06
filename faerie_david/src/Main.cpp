@@ -13,11 +13,11 @@
 
 #include <cmath>  // for abs()
 
-#include "Adafruit_SHT31.h"
+#include "Adafruit_SHT31.h"  // adafruit/Adafruit SHT31 Library
 #include "AstraCAN.h"
 #include "AstraMisc.h"
 #include "AstraMotors.h"
-#include "TeensyThreads.h"
+#include "TeensyThreads.h"  // https://github.com/ftrias/TeensyThreads
 #include "project/FAERIE.h"
 
 
@@ -26,6 +26,7 @@
 //-----------//
 
 const unsigned CAN_ID = 6;
+
 
 //------------------------//
 // Classes for components //
