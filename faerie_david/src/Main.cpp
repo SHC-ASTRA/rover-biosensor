@@ -10,6 +10,7 @@
 // Standard Includes
 #include <Arduino.h>
 #include <Servo.h>  // For SCABBARD servo (unused)
+#include <SPI.h>  // Fixes compilation issue with Adafruit BusIO
 
 #include <cmath>  // for abs()
 
