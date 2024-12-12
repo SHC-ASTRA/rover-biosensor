@@ -9,13 +9,13 @@
 
 // Standard Includes
 #include <Arduino.h>
+#include <SPI.h>    // Fixes compilation issue with Adafruit BusIO
 #include <Servo.h>  // For SCABBARD servo (unused)
-#include <SPI.h>  // Fixes compilation issue with Adafruit BusIO
 
 #include <cmath>  // for abs()
 
 #include "Adafruit_SHT31.h"  // adafruit/Adafruit SHT31 Library
-#include "AstraCAN.h"
+#include "AstraREVCAN.h"
 #include "AstraMisc.h"
 #include "AstraMotors.h"
 #include "TeensyThreads.h"  // https://github.com/ftrias/TeensyThreads
@@ -26,7 +26,7 @@
 // Constants //
 //-----------//
 
-const unsigned CAN_ID = 6;
+#define REV_CAN_ID 6
 
 
 //------------------------//
@@ -45,10 +45,10 @@ uint32_t lastDataSend = 0;
 
 
 // Setting up for CAN0 line
-AstraFCAN Can0;
+AstraCAN Can0;
 
 // AstraMotors(int setMotorID, int setCtrlMode, bool inv, int setMaxSpeed, float setMaxDuty)
-AstraMotors Motor1(CAN_ID, 1, false, 50, 0.50F);  // Drill
+AstraMotors Motor1(&Can0, REV_CAN_ID, sparkMax_ctrlType::kDutyCycle);  // Drill
 
 // Last millis value that the motor was sent a duty cycle
 unsigned long lastAccel;
@@ -190,9 +190,9 @@ void loop() {
         lastAccel = millis();
         Motor1.UpdateForAcceleration();
 
-        if (Motor1.getControlMode() == 1)  // send the correct duty cycle to the motors
+        if (Motor1.getControlMode() == sparkMax_ctrlType::kDutyCycle)  // send the correct duty cycle to the motors
         {
-            sendDutyCycle(Can0, CAN_ID, Motor1.getDuty());
+            sendDutyCycle(Can0, REV_CAN_ID, Motor1.getDuty());
 
         } else {
             // pass for RPM control mode
@@ -391,7 +391,7 @@ void loop() {
             }
 
             else if (subcommand == "id") {
-                identifyDevice(Can0, CAN_ID);
+                identifyDevice(Can0, REV_CAN_ID);
             }
 
             else if (subcommand == "shtheater") {
@@ -492,7 +492,7 @@ void loopHeartbeats(){
     Can0.enableFIFOInterrupt();
 
     while(1){
-        sendHeartbeat(Can0, CAN_ID);
+        sendHeartbeat(Can0, REV_CAN_ID);
         threads.delay(12);
         threads.yield();
     }
