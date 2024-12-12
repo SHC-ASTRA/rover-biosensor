@@ -15,9 +15,11 @@
 #include <cmath>  // for abs()
 
 #include "Adafruit_SHT31.h"  // adafruit/Adafruit SHT31 Library
-#include "AstraREVCAN.h"
+#ifndef REV_PWM
+#    include "AstraMotors.h"
+#    include "AstraREVCAN.h"
+#endif
 #include "AstraMisc.h"
-#include "AstraMotors.h"
 #include "TeensyThreads.h"  // https://github.com/ftrias/TeensyThreads
 #include "project/FAERIE.h"
 
@@ -44,6 +46,7 @@ Adafruit_SHT31 sht31 = Adafruit_SHT31();  // Faerie HUM/TEMP Sensor
 uint32_t lastDataSend = 0;
 
 
+#ifndef REV_PWM
 // Setting up for CAN0 line
 AstraCAN Can0;
 
@@ -52,6 +55,13 @@ AstraMotors Motor1(&Can0, REV_CAN_ID, sparkMax_ctrlType::kDutyCycle);  // Drill
 
 // Last millis value that the motor was sent a duty cycle
 unsigned long lastAccel;
+#else
+
+Servo revMotorPWM;
+
+#define PIN_REV_MOTOR_PWM 0  // TODO: PCB not created yet, move to project header
+
+#endif
 
 
 // Shake mode variables
@@ -139,11 +149,15 @@ void setup() {
     //   CAN   //
     // ------- //
 
+#ifndef REV_PWM
     Can0.begin();
     Can0.setBaudRate(1000000);
     Can0.setMaxMB(16);
     Can0.enableFIFO();
     Can0.enableFIFOInterrupt();
+#else
+    revMotorPWM.attach(PIN_REV_MOTOR_PWM);
+#endif
 
     //--------------------//
     // Initialize Sensors //
@@ -161,8 +175,10 @@ void setup() {
     // Heartbeat //
     //-----------//
 
+#ifndef REV_PWM
     // Heartbeat propogation
     threads.addThread(loopHeartbeats);
+#endif
 }
 
 
@@ -185,10 +201,12 @@ void setup() {
 //-------------------------------------------------//
 
 void loop() {
+#ifndef REV_PWM
     // Accelerate the motors
     if (millis() - lastAccel >= 50) {
         Motor1.accelerate();
     }
+#endif
 
 
 
@@ -210,12 +228,16 @@ void loop() {
         if (ind < 0 || ind > 4)
             ind = 0;
 
+#ifndef REV_PWM
         Motor1.setDuty(shakeDir * SHAKEOPTIONS[ind]);
+#else
+        revMotorPWM.write(0);  // TODO: figure out
+#endif
 
         // Don't shake for longer than SHAKEDURATION
         if (shakeStart + SHAKEDURATION <= millis()) {
             shakeMode = false;
-            Motor1.stop();
+            stopREVMotor();
         }
     }
 
@@ -223,7 +245,7 @@ void loop() {
 
     // Motor timeout
     if (millis() - lastMotorCmd >= MOTORTIMEOUT) {
-        Motor1.stop();
+        stopREVMotor();
         shakeMode = false;
     }
 
@@ -319,7 +341,7 @@ void loop() {
         }
 
         else if (command == "stop") {
-            Motor1.stop();
+            stopREVMotor();
             shakeMode = false;
         }
 
@@ -331,6 +353,7 @@ void loop() {
 
 
             /**/ if (subcommand == "duty") {
+#ifndef REV_PWM
                 // CW/+ = CLOSE, CCW/- = OPEN
                 lastMotorCmd = millis();
 
@@ -351,6 +374,17 @@ void loop() {
                 // Stop shake if duty is 0
                 if (val == 0)
                     shakeMode = false;
+#else
+                Serial.println("ERROR: Using PWM for REV motor control");
+#endif
+            }
+
+            else if (subcommand == "pwm") {
+#ifndef REV_PWM
+                Serial.println("ERROR: Using CAN for REV motor control");
+#else
+                revMotorPWM.write(args[2].toInt());  // TODO: figure out
+#endif
             }
 
             else if (subcommand == "shake") {
@@ -377,12 +411,16 @@ void loop() {
             }
 
             else if (subcommand == "stop") {
-                Motor1.stop();
+                stopREVMotor();
                 shakeMode = false;
             }
 
             else if (subcommand == "id") {
+#ifndef REV_PWM
                 identifyDevice(Can0, REV_CAN_ID);
+#else
+                Serial.println("ERROR: Using PWM for REV motor control");
+#endif
             }
 
             else if (subcommand == "shtheater") {
@@ -474,6 +512,7 @@ void loop() {
 //-------------------------------------------------------//
 
 
+#ifndef REV_PWM
 // clang-format off: to better sync with other people's code
 void loopHeartbeats(){
     Can0.begin();
@@ -490,6 +529,7 @@ void loopHeartbeats(){
 
 }
 // clang-format on
+#endif
 
 // Poll SHT and format temperature and humidity data into String
 // in format "faeriesht,`{temperature}`,`{humidity}`"
@@ -517,4 +557,12 @@ String getSHTData(void) {
         res += "999.9";
 
     return res;
+}
+
+void stopREVMotor() {
+#ifndef REV_PWM
+    Motor1.stop();
+#else
+    revMotorPWM.write(0);
+#endif
 }
