@@ -187,16 +187,7 @@ void setup() {
 void loop() {
     // Accelerate the motors
     if (millis() - lastAccel >= 50) {
-        lastAccel = millis();
-        Motor1.UpdateForAcceleration();
-
-        if (Motor1.getControlMode() == sparkMax_ctrlType::kDutyCycle)  // send the correct duty cycle to the motors
-        {
-            sendDutyCycle(Can0, REV_CAN_ID, Motor1.getDuty());
-
-        } else {
-            // pass for RPM control mode
-        }
+        Motor1.accelerate();
     }
 
 
@@ -224,7 +215,7 @@ void loop() {
         // Don't shake for longer than SHAKEDURATION
         if (shakeStart + SHAKEDURATION <= millis()) {
             shakeMode = false;
-            Motor1.setDuty(0);
+            Motor1.stop();
         }
     }
 
@@ -232,7 +223,7 @@ void loop() {
 
     // Motor timeout
     if (millis() - lastMotorCmd >= MOTORTIMEOUT) {
-        Motor1.setDuty(0);
+        Motor1.stop();
         shakeMode = false;
     }
 
@@ -328,7 +319,7 @@ void loop() {
         }
 
         else if (command == "stop") {
-            Motor1.setDuty(0);
+            Motor1.stop();
             shakeMode = false;
         }
 
@@ -386,7 +377,7 @@ void loop() {
             }
 
             else if (subcommand == "stop") {
-                Motor1.setDuty(0);
+                Motor1.stop();
                 shakeMode = false;
             }
 
