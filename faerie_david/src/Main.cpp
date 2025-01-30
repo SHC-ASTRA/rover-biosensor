@@ -10,17 +10,17 @@
 // Standard Includes
 #include <Arduino.h>
 #include <SPI.h>    // Fixes compilation issue with Adafruit BusIO
-#include <Servo.h>  // For SCABBARD servo (unused)
-
+#include <ESP32Servo.h>  // For SCABBARD servo (unused)
+#include "AstraREVCAN.h"
 #include <cmath>  // for abs()
 
 #include "Adafruit_SHT31.h"  // adafruit/Adafruit SHT31 Library
 #ifndef REV_PWM
 #    include "AstraMotors.h"
-#    include "AstraREVCAN.h"
+
 #endif
 #include "AstraMisc.h"
-#include "TeensyThreads.h"  // https://github.com/ftrias/TeensyThreads
+
 #include "project/FAERIE.h"
 
 
@@ -88,7 +88,7 @@ int shakeDir = 1;
 
 
 // How long to wait before stopping the motor after the last cmd was sent
-const uint32_t MOTORTIMEOUT = 30'000;
+const uint32_t MOTORTIMEOUT = 30000;
 
 // Last millis value that a motor command was received
 // Used to stop the motor after MOTORTIMEOUT
@@ -100,6 +100,7 @@ uint32_t lastMotorCmd = 0;
 // Prototypes //
 //------------//
 
+void stopREVMotor();
 void loopHeartbeats();
 String getSHTData(void);
 
@@ -121,11 +122,11 @@ void setup() {
     digitalWrite(LED_BUILTIN, HIGH);
 
     // Faerie drill lasers
-    pinMode(PIN_LASER_NMOS, OUTPUT);
-    digitalWrite(PIN_LASER_NMOS, LOW);
+    pinMode(PIN_LASERS, OUTPUT);
+    digitalWrite(PIN_LASERS, LOW);
 
     // SCABBARD Servo
-    servo.attach(PIN_SERVO_PWM, SERVO_MIN, SERVO_MAX);
+    servo.attach(PIN_SPARKMAX_PWM, 1000, 2000);
 
     // LED stays on for 2 seconds to show powered on
     delay(2000);
@@ -305,7 +306,7 @@ void loop() {
             // Remove first argument, which is "faerie" to tell socket teensy to redirect to faerie
             args.erase(args.begin());
             // Our command is not "faerie", but what comes after it
-            command = args[0].toLowerCase();
+            command = args[0];
         }
 
         //--------------------//
@@ -349,7 +350,7 @@ void loop() {
         // ctrl //
         //------//
         else if (command == "ctrl") {  // ctrl //
-            String subcommand = args[1].toLowerCase();
+            String subcommand = args[1];
 
 
             /**/ if (subcommand == "duty") {
@@ -432,9 +433,9 @@ void loop() {
 
             else if (subcommand == "laser") {
                 if (args[2] == "on")
-                    digitalWrite(PIN_LASER_NMOS, HIGH);
+                    digitalWrite(PIN_LASERS, HIGH);
                 else
-                    digitalWrite(PIN_LASER_NMOS, LOW);
+                    digitalWrite(PIN_LASERS, LOW);
             }
 
             else if (subcommand == "loadsht") {
@@ -447,7 +448,7 @@ void loop() {
         // data //
         //------//
         else if (command == "data") {  // data //
-            String subcommand = args[1].toLowerCase();
+            String subcommand = args[1];
 
 
             /**/ if (subcommand == "sendtemp") {
