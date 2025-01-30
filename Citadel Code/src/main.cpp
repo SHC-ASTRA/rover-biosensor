@@ -1,4 +1,16 @@
-// Includes
+/**
+ * @file Template.cpp
+ * @author your name (you@domain.com)
+ * @brief description
+ *
+ */
+
+//------------//
+//  Includes  //
+//------------//
+
+#include "AstraMisc.h"
+#include "project/TEMPLATE.h"
 #include <Arduino.h>
 #include <iostream>
 #include <string>
@@ -7,38 +19,66 @@
 #include <LSS.h>
 #include <vector>
 
+//------------//
+//  Settings  //
+//------------//
+
+// Comment out to disable LED blinking
+#define BLINK
 #define LSS_ID        (3)
 #define LSS_BAUD    (LSS_DefaultBaud)
 #define LSS_SERIAL    (Serial2)
-
-LSS myLSS = LSS(LSS_ID);
-using namespace std;
-
 #define LED_PIN 13 //Builtin LED pin for Teensy 4.1 (pin 25 for pi Pico)
 
-//Prototypes
-void activateCapSer(int num, int truFal);
-void activatePump(int num, int truFal);
-void activateFan(int num, int truFal);
 
-std::vector<String> parseInput(String input, const char delim);
+//---------------------//
+//  Component classes  //
+//---------------------//
+LSS myLSS = LSS(LSS_ID);
 
+//----------//
+//  Timing  //
+//----------//
 
+uint32_t lastBlink = 0;
+bool ledState = false;
 unsigned long fanTimer;
 unsigned long pumpTimer;
 bool fanON = 0; // 1 = long = 2seconds, 0 = short = 0.5s
 bool pumpON = 0;
 
+//--------------//
+//  Prototypes  //
+//--------------//
+void activateCapSer(int num, int truFal);
+void activatePump(int num, int truFal);
+void activateFan(int num, int truFal);
 
+// std::vector<String> parseInput(String prevCommand, const char delim);
+
+//------------------------------------------------------------------------------------------------//
+//  Setup
+//------------------------------------------------------------------------------------------------//
+//
+//
+//------------------------------------------------//
+//                                                //
+//      ////////    //////////    //////////      //
+//    //                //        //        //    //
+//    //                //        //        //    //
+//      //////          //        //////////      //
+//            //        //        //              //
+//            //        //        //              //
+//    ////////          //        //              //
+//                                                //
+//------------------------------------------------//
 void setup() {
-
-  //-----------------//
-  // Initialize Pins //
-  //-----------------//
+    //--------//
+    //  Pins  //
+    //--------//
 
     pinMode(0, OUTPUT);  // Pi Tx   (UART) // UART
     pinMode(1, INPUT);   // Pi Rx   (UART) // UART
-
     pinMode(LED_PIN, OUTPUT);
     Serial.begin(115200);
     digitalWrite(LED_PIN, HIGH);
@@ -47,9 +87,9 @@ void setup() {
     digitalWrite(LED_PIN, LOW);
 
     // Fans
-    pinMode(31, OUTPUT);
-    pinMode(32, OUTPUT);
-    pinMode(33, OUTPUT);
+    pinMode(19, OUTPUT);
+    pinMode(20, OUTPUT);
+    pinMode(21, OUTPUT);
 
     // Pumps
     pinMode(38, OUTPUT);
@@ -65,34 +105,32 @@ void setup() {
     digitalWrite(40, LOW); // Pump 3 
     digitalWrite(41, LOW); // Pump 4 
 
-  //-----------------------//
-  // Initialize Lynx Servo //
-  //-----------------------//
+    //------------------//
+    //  Communications  //
+    //------------------//
 
-  LSS::initBus(LSS_SERIAL, LSS_BAUD);
+    Serial.begin(SERIAL_BAUD);
+    LSS::initBus(LSS_SERIAL, LSS_BAUD);
+    delay(2000);
+    myLSS.setAngularStiffness(0);
+    myLSS.setAngularHoldingStiffness(0);
+    myLSS.setAngularAcceleration(15);
+    myLSS.setAngularDeceleration(15);
 
-	// Initialize LSS output to position 0.0
-	// myLSS.move(0);
+    //-----------//
+    //  Sensors  //
+    //-----------//
 
-	// Wait for it to get there
-	delay(2000);
 
-	// Lower output servo stiffness & accelerations
-	myLSS.setAngularStiffness(0);
-	myLSS.setAngularHoldingStiffness(0);
-	myLSS.setAngularAcceleration(15);
-	myLSS.setAngularDeceleration(15);
-
-	// Make input servo limp (no active resistance)
-	//myLSS_Input.limp();
-
+    //--------------------//
+    //  Misc. Components  //
+    //--------------------//
 }
 
 
-
-//------------//
-// Begin Loop //
-//------------//
+//------------------------------------------------------------------------------------------------//
+//  Loop
+//------------------------------------------------------------------------------------------------//
 //
 //
 //-------------------------------------------------//
@@ -106,65 +144,79 @@ void setup() {
 //    /////////      //////////    //              //
 //                                                 //
 //-------------------------------------------------//
-
-
 void loop() {
-  //----------------------------------//
-  // Runs something at a set interval //
-  // Useful for testing               //
-  //----------------------------------//
-
-  
-  if((pumpON)&&(pumpTimer < millis())){
-    for(int i = 0; i <= 2; i++){
-      activatePump(i,0);
-    } 
-    pumpON = 0;
-    Serial.println("Stopping Pumps");
-  }
-  if((fanON)&&(fanTimer < millis())){
-    for(int i = 0; i <= 2; i++){
-      activateFan(i,0);
-    } 
-    fanON = 0;
-    Serial.println("Stopping Fans");
-  }
-  
+    //----------//
+    //  Timers  //
+    //----------//
+#ifdef BLINK
+    if (millis() - lastBlink > 1000) {
+        lastBlink = millis();
+        ledState = !ledState;
+        digitalWrite(LED_BUILTIN, ledState);
+    }
+#endif
 
 
-  //------------------//
-  // Command Receiving //
-  //------------------//
-  //
-  //-------------------------------------------------------//
-  //                                                       //
-  //      /////////    //\\        ////    //////////      //
-  //    //             //  \\    //  //    //        //    //
-  //    //             //    \\//    //    //        //    //
-  //    //             //            //    //        //    //
-  //    //             //            //    //        //    //
-  //    //             //            //    //        //    //
-  //      /////////    //            //    //////////      //
-  //                                                       //
-  //-------------------------------------------------------//
-  //
-  // The giant CMD helps with finding this place
-  //
-  // Commands will be received as a comma separated value string
-  // Ex: "ctrl,1,1,1,1" or "speedMultiplier,0.5" or "sendHealthPacket"
-  // The program parses the string so that each piece of data can be used individually
-  // For examples of parsing data you can use the link below
-  // https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+    //-------------//
+    //  CAN prevCommand  //
+    //-------------//
 
-  if (Serial.available()) {
-    String command = Serial.readStringUntil('\n');  // Command is equal to a line in the serial
-    command.trim();
-    String prevCommand;
 
-    vector<String> parCmd = {};
-    parCmd = parseInput(command, ',');
+    //------------------//
+    //  UART/USB prevCommand  //
+    //------------------//
+    //
+    //
+    //-------------------------------------------------------//
+    //                                                       //
+    //      /////////    //\\        ////    //////////      //
+    //    //             //  \\    //  //    //        //    //
+    //    //             //    \\//    //    //        //    //
+    //    //             //            //    //        //    //
+    //    //             //            //    //        //    //
+    //    //             //            //    //        //    //
+    //      /////////    //            //    //////////      //
+    //                                                       //
+    //-------------------------------------------------------//
+    if (Serial.available()) {
+        String prevCommand = Serial.readStringUntil('\n');
 
-    // Fan
+        prevCommand.trim();                   // Remove preceding and trailing whitespace
+        std::vector<String> parCmd = {};  // Initialize empty vector to hold separated arguments
+        parseInput(prevCommand, parCmd, ',');   // Separate `prevCommand` by commas and place into parCmd vector
+        parCmd[0].toLowerCase();          // Make command case-insensitive
+        String command = parCmd[0];       // To make processing code more readable
+
+        //--------//
+        //  Misc  //
+        //--------//
+        /**/ if (command == "ping") {
+            Serial.println("pong");
+        }
+
+        else if (command == "time") {
+            Serial.println(millis());
+        }
+
+        else if (command == "led") {
+            if (parCmd[1] == "on")
+                digitalWrite(LED_BUILTIN, HIGH);
+            else if (parCmd[1] == "off")
+                digitalWrite(LED_BUILTIN, LOW);
+            else if (parCmd[1] == "toggle") {
+                ledState = !ledState;
+                digitalWrite(LED_BUILTIN, ledState);
+            }
+        }
+
+        //-----------//
+        //  Sensors  //
+        //-----------//
+
+        //----------//
+        //  Motors  //
+        //----------//
+        // Fan
     if (parCmd[0] == "fan") {                          // Is looking for a command that looks like "fan,0,0,0,time"
         if(command != prevCommand)
         {
@@ -265,19 +317,26 @@ void loop() {
       Serial.println(millis());
     }
   }
+    
 }
 
-//-------------------------------------------------------//
-//                                                       //
-//    ///////////    //\\          //      //////////    //
-//    //             //  \\        //    //              //
-//    //             //    \\      //    //              //
-//    //////         //      \\    //    //              //
-//    //             //        \\  //    //              //
-//    //             //          \\//    //              //
-//    //             //           \//      //////////    //
-//                                                       //
-//-------------------------------------------------------//
+
+//------------------------------------------------------------------------------------------------//
+//  Function definitions
+//------------------------------------------------------------------------------------------------//
+//
+//
+//----------------------------------------------------//
+//                                                    //
+//    //////////    //          //      //////////    //
+//    //            //\\        //    //              //
+//    //            //  \\      //    //              //
+//    //////        //    \\    //    //              //
+//    //            //      \\  //    //              //
+//    //            //        \\//    //              //
+//    //            //          //      //////////    //
+//                                                    //
+//----------------------------------------------------//
 
 void activateFan(int num, int truFal){
   digitalWrite(31+num, truFal);
