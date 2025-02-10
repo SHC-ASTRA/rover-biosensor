@@ -34,6 +34,7 @@
 //  Component classes  //
 //---------------------//
 LSS myLSS = LSS(LSS_ID);
+hw_timer_t *Timer0_Cfg = NULL, *Timer1_Cfg = NULL;
 
 //----------//
 //  Timing  //
@@ -41,10 +42,12 @@ LSS myLSS = LSS(LSS_ID);
 
 uint32_t lastBlink = 0;
 bool ledState = false;
-unsigned long fanTimer;
-unsigned long pumpTimer;
-bool fanON = 0; // 1 = long = 2seconds, 0 = short = 0.5s
-bool pumpON = 0;
+unsigned long fanTimer, fansTimer, fanTimer_1, fanTimer_2, fanTimer_3;
+unsigned long pumpTimer, pumpsTimer, pumpTimer_1, pumpTimer_2, pumpTimer_3;
+bool fanON = 0, fansOn = 0, fanOn_1 = 0, fanOn_2 = 0, fanOn_3 = 0; // 1 = long = 2seconds, 0 = short = 0.5s
+bool pumpON = 0, pumpON_1 = 0, pumpON_2 = 0, pumpON_3 = 0;
+unsigned long currTime;
+unsigned long prevFanTime = 0, prevFanTime_1 = 0, prevFanTime_2 = 0, prevFanTime_3 = 0;
 
 //--------------//
 //  Prototypes  //
@@ -53,6 +56,40 @@ void activateCapSer(int num, int truFal);
 void activatePump(int num, int truFal);
 void activateFan(int num, int truFal);
 
+void IRAM_ATTR Timer0_ISR()
+{
+  if (fansOn && (currTime - prevFanTime >= fansTimer))
+  {
+    digitalWrite(19, LOW);
+    digitalWrite(20, LOW);
+    digitalWrite(21, LOW);
+    fansOn = 0;
+    prevFanTime = currTime;
+  }
+  else if (fanOn_1 && (currTime - prevFanTime_1 >= fanTimer_1))
+  {
+    digitalWrite(19, LOW);
+    fanOn_1 = 0;
+    prevFanTime_1 = currTime;
+  }
+  else if (fanOn_2 && (currTime - prevFanTime_2 >= fanTimer_2))
+  {
+    digitalWrite(20, LOW);
+    fanOn_2 = 0;
+    prevFanTime_2 = currTime;
+  }
+  else if (fanOn_3 && (currTime - prevFanTime_3 >= fanTimer_3))
+  {
+    digitalWrite(21, LOW);
+    fanOn_3 = 0;
+    prevFanTime_3 = currTime;
+  }
+}
+
+void IRAM_ATTR Timer1_ISR()
+{
+  digitalWrite(LED_BUILTIN, !ledState);
+}
 // std::vector<String> parseInput(String prevCommand, const char delim);
 
 //------------------------------------------------------------------------------------------------//
@@ -117,6 +154,15 @@ void setup()
   myLSS.setAngularAcceleration(15);
   myLSS.setAngularDeceleration(15);
 
+  Timer0_Cfg = timerBegin(0, 80, true);
+  timerAttachInterrupt(Timer0_Cfg, &Timer0_ISR, true);
+  timerAlarmWrite(Timer0_Cfg, 5000, true);
+  timerAlarmEnable(Timer0_Cfg);
+  Timer1_Cfg = timerBegin(0, 80, true);
+  timerAttachInterrupt(Timer1_Cfg, &Timer1_ISR, true);
+  timerAlarmWrite(Timer1_Cfg, 1000000, true);
+  timerAlarmEnable(Timer1_Cfg);
+
   //-----------//
   //  Sensors  //
   //-----------//
@@ -155,6 +201,8 @@ void loop()
     digitalWrite(LED_BUILTIN, ledState);
   }
 #endif
+
+  currTime = millis();
 
   //-------------//
   //  CAN prevCommand  //
@@ -201,15 +249,16 @@ void loop()
 
     else if (command == "led")
     {
-      if (parCmd[1] == "on")
-        digitalWrite(LED_BUILTIN, HIGH);
-      else if (parCmd[1] == "off")
-        digitalWrite(LED_BUILTIN, LOW);
-      else if (parCmd[1] == "toggle")
-      {
-        ledState = !ledState;
-        digitalWrite(LED_BUILTIN, ledState);
-      }
+      digitalWrite(LED_BUILTIN, !ledState);
+      // if (parCmd[1] == "on")
+      //   digitalWrite(LED_BUILTIN, HIGH);
+      // else if (parCmd[1] == "off")
+      //   digitalWrite(LED_BUILTIN, LOW);
+      // else if (parCmd[1] == "toggle")
+      // {
+      //   ledState = !ledState;
+      //   digitalWrite(LED_BUILTIN, ledState);
+      // }
     }
 
     //-----------//
@@ -229,8 +278,8 @@ void loop()
         {
           digitalWrite(i, parCmd[1].toInt());
         }
-        fanON = 1;
-        fanTimer = millis() + parCmd[4].toInt();
+        fansON = 1;
+        fansTimer = parCmd[4].toInt();
         Serial.println("Fans Activated");
       }
       // Pump
@@ -241,8 +290,24 @@ void loop()
       {
         prevCommand = command;
         digitalWrite(19 + parCmd[1].toInt(), parCmd[2].toInt());
-        fanON = 1;
-        fanTimer = millis() + parCmd[4].toInt();
+        // fanOn_1 = 1;
+        // fanTimer_1 = parCmd[4].toInt();
+        switch (parCmd[1].toInt())
+        {
+        case (1):
+          fanOn_1 = 1;
+          fanTimer_1 = parCmd[3].toInt();
+          break;
+        case (2):
+          fanOn_2 = 1;
+          fanTimer_2 = parCmd[3].toInt();
+          break;
+        case (3):
+          fanOn_3 = 1;
+          fanTimer_3 = parCmd[3].toInt();
+          break;
+          default;
+        }
         Serial.println("Fans Activated");
       }
     }
@@ -388,8 +453,8 @@ void loop()
     // }
     else if (parCmd[0] == "shutdown")
     {
-      for(int i=31; i<42; i++)
-        digitalWrite(i,0);
+      for (int i = 31; i < 42; i++)
+        digitalWrite(i, 0);
       // digitalWrite(31, 0);
       // digitalWrite(32, 0);
       // digitalWrite(33, 0);
@@ -397,14 +462,6 @@ void loop()
       // digitalWrite(40, 0);
       // digitalWrite(41, 0);
       myLSS.reset();
-    }
-    else if (parCmd[0] == "ping")
-    {
-      Serial.println("pong");
-    }
-    else if (parCmd[0] == "time")
-    {
-      Serial.println(millis());
     }
   }
 }
@@ -426,15 +483,15 @@ void loop()
 //                                                    //
 //----------------------------------------------------//
 
-void activateFan(int num, int truFal)
-{
-  digitalWrite(31 + num, truFal);
-}
+// void activateFan(int num, int truFal)
+// {
+//   digitalWrite(31 + num, truFal);
+// }
 
-void activatePump(int num, int truFal)
-{
-  digitalWrite(39 + num, truFal);
-}
+// void activatePump(int num, int truFal)
+// {
+//   digitalWrite(39 + num, truFal);
+// }
 
 std::vector<String> parseInput(String input, const char delim)
 {
