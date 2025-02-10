@@ -33,7 +33,7 @@
 //---------------------//
 //  Component classes  //
 //---------------------//
-LSS myLSS = LSS(LSS_ID);
+LSS myLSS_1_1 = LSS(LSS_ID), myLSS_1_2 = LSS(LSS_ID), myLSS_1_3 = LSS(LSS_ID);
 hw_timer_t *Timer0_Cfg = NULL, *Timer1_Cfg = NULL;
 
 //----------//
@@ -55,6 +55,7 @@ unsigned long prevFanTime = 0, prevFanTime_1 = 0, prevFanTime_2 = 0, prevFanTime
 void activateCapSer(int num, int truFal);
 void activatePump(int num, int truFal);
 void activateFan(int num, int truFal);
+void initialize();
 
 void IRAM_ATTR Timer0_ISR()
 {
@@ -110,66 +111,7 @@ void IRAM_ATTR Timer1_ISR()
 //------------------------------------------------//
 void setup()
 {
-  //--------//
-  //  Pins  //
-  //--------//
-
-  pinMode(0, OUTPUT); // Pi Tx   (UART) // UART
-  pinMode(1, INPUT);  // Pi Rx   (UART) // UART
-  pinMode(LED_PIN, OUTPUT);
-  Serial.begin(115200);
-  digitalWrite(LED_PIN, HIGH);
-
-  delay(2000);
-  digitalWrite(LED_PIN, LOW);
-
-  // Fans
-  pinMode(19, OUTPUT);
-  pinMode(20, OUTPUT);
-  pinMode(21, OUTPUT);
-
-  // Pumps
-  pinMode(38, OUTPUT);
-  pinMode(39, OUTPUT);
-  pinMode(40, OUTPUT);
-  pinMode(41, OUTPUT);
-
-  digitalWrite(31, LOW); // Fan 1
-  digitalWrite(32, LOW); // Fan 2
-  digitalWrite(33, LOW); // Fan 3
-
-  digitalWrite(39, LOW); // Pump 2
-  digitalWrite(40, LOW); // Pump 3
-  digitalWrite(41, LOW); // Pump 4
-
-  //------------------//
-  //  Communications  //
-  //------------------//
-
-  Serial.begin(SERIAL_BAUD);
-  LSS::initBus(LSS_SERIAL, LSS_BAUD);
-  delay(2000);
-  myLSS.setAngularStiffness(0);
-  myLSS.setAngularHoldingStiffness(0);
-  myLSS.setAngularAcceleration(15);
-  myLSS.setAngularDeceleration(15);
-
-  Timer0_Cfg = timerBegin(0, 80, true);
-  timerAttachInterrupt(Timer0_Cfg, &Timer0_ISR, true);
-  timerAlarmWrite(Timer0_Cfg, 5000, true);
-  timerAlarmEnable(Timer0_Cfg);
-  Timer1_Cfg = timerBegin(0, 80, true);
-  timerAttachInterrupt(Timer1_Cfg, &Timer1_ISR, true);
-  timerAlarmWrite(Timer1_Cfg, 1000000, true);
-  timerAlarmEnable(Timer1_Cfg);
-
-  //-----------//
-  //  Sensors  //
-  //-----------//
-
-  //--------------------//
-  //  Misc. Components  //
-  //--------------------//
+  initialize();
 }
 
 //------------------------------------------------------------------------------------------------//
@@ -193,14 +135,14 @@ void loop()
   //----------//
   //  Timers  //
   //----------//
-#ifdef BLINK
-  if (millis() - lastBlink > 1000)
-  {
-    lastBlink = millis();
-    ledState = !ledState;
-    digitalWrite(LED_BUILTIN, ledState);
-  }
-#endif
+  // #ifdef BLINK
+  //   if (millis() - lastBlink > 1000)
+  //   {
+  //     lastBlink = millis();
+  //     ledState = !ledState;
+  //     digitalWrite(LED_BUILTIN, ledState);
+  //   }
+  // #endif
 
   currTime = millis();
 
@@ -294,19 +236,20 @@ void loop()
         // fanTimer_1 = parCmd[4].toInt();
         switch (parCmd[1].toInt())
         {
-        case (1):
+        case 1:
           fanOn_1 = 1;
           fanTimer_1 = parCmd[3].toInt();
           break;
-        case (2):
+        case 1:
           fanOn_2 = 1;
           fanTimer_2 = parCmd[3].toInt();
           break;
-        case (3):
+        case 3:
           fanOn_3 = 1;
           fanTimer_3 = parCmd[3].toInt();
           break;
-          default;
+        default:
+          break;
         }
         Serial.println("Fans Activated");
       }
@@ -383,85 +326,177 @@ void loop()
     // }
     else if (parCmd[0] == "servo")
     {
-      if (parCmd[2] == "Relative")
+      switch (parCmd[2].toInt();)
       {
-        myLSS.moveRelative(((parCmd[3]).toInt()) * 10);
-        Serial.println(myLSS.getPosition());
-      }
-      else if (parCmd[2] == "FullRetract")
-      {
-        myLSS.moveRelative(((parCmd[3]).toInt()) * 10);
-        Serial.println(myLSS.getPosition());
-      }
-      else if (parCmd[2] == "FullRetract")
-      {
-        myLSS.move(-900);
-        Serial.println("Full Retractig CITADEL arm");
-      }
-      else if (parCmd[2] == "Half")
-      {
-        myLSS.move(0);
-        Serial.println("Setting arm to half extend");
-      }
-      else if (parCmd[2] == "Extend")
-      { //
-        myLSS.moveRelative(20);
-        Serial.println("Extending CITADEL arm");
-      }
-      else if (parCmd[2] == "Retract")
-      { //
-        myLSS.moveRelative(-20);
-        Serial.println("Retractig CITADEL arm");
-      }
-      else if (parCmd[2] == "Reset")
-      {
-        myLSS.reset();
-        Serial.println("Servo Reset");
+
+      case 1:
+        if (parCmd[2] == "Relative")
+        {
+          myLSS_1.moveRelative(((parCmd[2]).toInt()) * 10);
+          Serial.println(myLSS_1.getPosition());
+        }
+        else if (parCmd[2] == "FullRetract")
+        {
+          myLSS_1.moveRelative(((parCmd[2]).toInt()) * 10);
+          Serial.println(myLSS_1.getPosition());
+        }
+        else if (parCmd[2] == "FullRetract")
+        {
+          myLSS_1.move(-900);
+          Serial.println("Full Retractig CITADEL arm");
+        }
+        else if (parCmd[2] == "Half")
+        {
+          myLSS_1.move(0);
+          Serial.println("Setting arm to half extend");
+        }
+        else if (parCmd[2] == "Extend")
+        { //
+          myLSS_1.moveRelative(20);
+          Serial.println("Extending CITADEL arm");
+        }
+        else if (parCmd[2] == "Retract")
+        { //
+          myLSS_1.moveRelative(-20);
+          Serial.println("Retractig CITADEL arm");
+        }
+        else if (parCmd[2] == "Reset")
+        {
+          myLSS_1.reset();
+          Serial.println("Servo Reset");
+        }
+        break;
+
+      case 2:
+        if (parCmd[2] == "Relative")
+        {
+          myLSS_2.moveRelative(((parCmd[2]).toInt()) * 10);
+          Serial.println(myLSS_1.getPosition());
+        }
+        else if (parCmd[2] == "FullRetract")
+        {
+          myLSS_2.moveRelative(((parCmd[2]).toInt()) * 10);
+          Serial.println(myLSS_1.getPosition());
+        }
+        else if (parCmd[2] == "FullRetract")
+        {
+          myLSS_2.move(-900);
+          Serial.println("Full Retractig CITADEL arm");
+        }
+        else if (parCmd[2] == "Half")
+        {
+          myLSS_2.move(0);
+          Serial.println("Setting arm to half extend");
+        }
+        else if (parCmd[2] == "Extend")
+        { //
+          myLSS_2.moveRelative(20);
+          Serial.println("Extending CITADEL arm");
+        }
+        else if (parCmd[2] == "Retract")
+        { //
+          myLSS_2.moveRelative(-20);
+          Serial.println("Retractig CITADEL arm");
+        }
+        else if (parCmd[2] == "Reset")
+        {
+          myLSS_2.reset();
+          Serial.println("Servo Reset");
+        }
+        break;
+
+      case 3:
+        if (parCmd[2] == "Relative")
+        {
+          myLSS_3.moveRelative(((parCmd[2]).toInt()) * 10);
+          Serial.println(myLSS_1.getPosition());
+        }
+        else if (parCmd[2] == "FullRetract")
+        {
+          myLSS_3.moveRelative(((parCmd[2]).toInt()) * 10);
+          Serial.println(myLSS_1.getPosition());
+        }
+        else if (parCmd[2] == "FullRetract")
+        {
+          myLSS_3.move(-900);
+          Serial.println("Full Retractig CITADEL arm");
+        }
+        else if (parCmd[2] == "Half")
+        {
+          myLSS_3.move(0);
+          Serial.println("Setting arm to half extend");
+        }
+        else if (parCmd[2] == "Extend")
+        { //
+          myLSS_3.moveRelative(20);
+          Serial.println("Extending CITADEL arm");
+        }
+        else if (parCmd[2] == "Retract")
+        { //
+          myLSS_3.moveRelative(-20);
+          Serial.println("Retractig CITADEL arm");
+        }
+        else if (parCmd[2] == "Reset")
+        {
+          myLSS_3.reset();
+          Serial.println("Servo Reset");
+        }
+        break;
+
+      default:
+        break;
       }
     }
     // else if (parCmd[0] == "servoRelative")
     // { // Is looking for a command that looks like "srvR,x" where is how far you want the servo to move
     //   // activate servo with speed being the token
-    //   // myLSS.move((parCmd[1]).toInt());
-    //   myLSS.moveRelative(((parCmd[1]).toInt()) * 10);
-    //   Serial.println(myLSS.getPosition());
+    //   // myLSS_1.move((parCmd[1]).toInt());
+    //   myLSS_1.moveRelative(((parCmd[1]).toInt()) * 10);
+    //   Serial.println(myLSS_1.getPosition());
     // }
     // else if (parCmd[0] == "servoFullRetract")
     // { //
-    //   myLSS.move(-900);
+    //   myLSS_1.move(-900);
     //   Serial.println("Full Retractig CITADEL arm");
     // }
     // else if (parCmd[0] == "servoHalf")
     // { //
-    //   myLSS.move(0);
+    //   myLSS_1.move(0);
     //   Serial.println("Setting arm to half extend");
     // }
     // else if (parCmd[0] == "servoExtend")
     // { //
-    //   myLSS.moveRelative(20);
+    //   myLSS_1.moveRelative(20);
     //   Serial.println("Extending CITADEL arm");
     // }
     // else if (parCmd[0] == "servoRetract")
     // { //
-    //   myLSS.moveRelative(-20);
+    //   myLSS_1.moveRelative(-20);
     //   Serial.println("Retractig CITADEL arm");
     // }
     // else if (parCmd[0] == "servoReset")
     // {
-    //   myLSS.reset();
+    //   myLSS_1.reset();
     //   Serial.println("Servo Reset");
     // }
     else if (parCmd[0] == "shutdown")
     {
-      for (int i = 31; i < 42; i++)
-        digitalWrite(i, 0);
-      // digitalWrite(31, 0);
-      // digitalWrite(32, 0);
-      // digitalWrite(33, 0);
-      // digitalWrite(39, 0);
-      // digitalWrite(40, 0);
-      // digitalWrite(41, 0);
-      myLSS.reset();
+      for (int i = 19; i < 22; i++)
+        digitalWrite(i, LOW);
+      digitalWrite(25, LOW);
+      digitalWrite(20, LOW);
+      digitalWrite(22, LOW);
+      digitalWrite(23, LOW);
+      digitalWrite(17, LOW);
+      digitalWrite(11, LOW);
+      digitalWrite(12, LOW);
+      digitalWrite(21, LOW);
+      digitalWrite(24, LOW);
+      digitalWrite(18, LOW);
+      
+      myLSS_1.reset();
+      myLSS_2.reset();
+      myLSS_3.reset();
     }
   }
 }
@@ -492,6 +527,88 @@ void loop()
 // {
 //   digitalWrite(39 + num, truFal);
 // }
+
+void initialize()
+{
+  //--------//
+  //  Pins  //
+  //--------//
+
+  pinMode(0, OUTPUT); // Pi Tx   (UART) // UART
+  pinMode(1, INPUT);  // Pi Rx   (UART) // UART
+  pinMode(LED_PIN, OUTPUT);
+  Serial.begin(115200);
+  while (!Serial)
+    ;
+  digitalWrite(LED_PIN, HIGH);
+
+  delay(2000);
+  digitalWrite(LED_PIN, LOW);
+
+  // Fans
+  pinMode(19, OUTPUT);
+  pinMode(20, OUTPUT);
+  pinMode(21, OUTPUT);
+
+  // Vibrator
+  pinMode(25, OUTPUT);
+
+  // Pumps
+  pinMode(38, OUTPUT);
+  pinMode(39, OUTPUT);
+  pinMode(40, OUTPUT);
+  pinMode(41, OUTPUT);
+
+  digitalWrite(31, LOW); // Fan 1
+  digitalWrite(32, LOW); // Fan 2
+  digitalWrite(33, LOW); // Fan 3
+
+  digitalWrite(25, LOW); // Vibrator
+
+  digitalWrite(20, LOW); // Pump 1
+  digitalWrite(22, LOW); // Pump 2
+  digitalWrite(23, LOW); // Pump 3
+  digitalWrite(17, LOW); // Pump 4
+
+  //------------------//
+  //  Communications  //
+  //------------------//
+
+  Serial.begin(SERIAL_BAUD);
+  LSS::initBus(LSS_SERIAL, LSS_BAUD);
+  delay(2000);
+  myLSS_1.setAngularStiffness(0);
+  myLSS_1.setAngularHoldingStiffness(0);
+  myLSS_1.setAngularAcceleration(15);
+  myLSS_1.setAngularDeceleration(15);
+
+  myLSS_2.setAngularStiffness(0);
+  myLSS_2.setAngularHoldingStiffness(0);
+  myLSS_2.setAngularAcceleration(15);
+  myLSS_2.setAngularDeceleration(15);
+
+  myLSS_3.setAngularStiffness(0);
+  myLSS_3.setAngularHoldingStiffness(0);
+  myLSS_3.setAngularAcceleration(15);
+  myLSS_3.setAngularDeceleration(15);
+
+  Timer0_Cfg = timerBegin(0, 80, true);
+  timerAttachInterrupt(Timer0_Cfg, &Timer0_ISR, true);
+  timerAlarmWrite(Timer0_Cfg, 5000, true);
+  timerAlarmEnable(Timer0_Cfg);
+  Timer1_Cfg = timerBegin(0, 80, true);
+  timerAttachInterrupt(Timer1_Cfg, &Timer1_ISR, true);
+  timerAlarmWrite(Timer1_Cfg, 1000000, true);
+  timerAlarmEnable(Timer1_Cfg);
+
+  //-----------//
+  //  Sensors  //
+  //-----------//
+
+  //--------------------//
+  //  Misc. Components  //
+  //--------------------//
+}
 
 std::vector<String> parseInput(String input, const char delim)
 {
